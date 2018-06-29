@@ -1,34 +1,34 @@
 teams = {
-'Baltimore Orioles': {'lednum': 37, 'color1': '#000000','color2': '#000000'},
-'Boston Red Sox': {'lednum': 40, 'color1': '#000000','color2': '#000000'},
-'New York Yankees': {'lednum': 39, 'color1': '#000000','color2': '#000000'},
-'Tampa Bay Rays': {'lednum': 15, 'color1': '#000000','color2': '#000000'},
-'Toronto Blue Jays': {'lednum': 27, 'color1': '#000000','color2': '#000000'},
-'Atlanta Braves': {'lednum': 19, 'color1': '#000000','color2': '#000000'},
-'Miami Marlins': {'lednum': 16, 'color1': '#000000','color2': '#000000'},
-'New York Mets': {'lednum': 39, 'color1': '#000000','color2': '#000000'},
-'Philadelphia Phillies': {'lednum': 38, 'color1': '#000000','color2': '#000000'},
-'Washington Nationals': {'lednum': 36, 'color1': '#000000','color2': '#000000'},
-'Chicago White Sox': {'lednum': 25, 'color1': '#000000','color2': '#000000'},
-'Cleveland Indians': {'lednum': 29, 'color1': '#000000','color2': '#000000'},
-'Detroit Tigers': {'lednum': 26, 'color1': '#000000','color2': '#000000'},
-'Kansas City Royals': {'lednum': 21, 'color1': '#000000','color2': '#000000'},
-'Minnesota Twins': {'lednum': 22, 'color1': '#000000','color2': '#000000'},
-'Chicago Cubs': {'lednum': 25, 'color1': '#000000','color2': '#000000'},
-'Cincinnati Reds': {'lednum': 34, 'color1': '#000000','color2': '#000000'},
-'Milwaukee Brewers': {'lednum': 24, 'color1': '#000000','color2': '#000000'},
-'Pittsburgh Pirates': {'lednum': 35, 'color1': '#000000','color2': '#000000'},
-'St. Louis Cardinals': {'lednum': 31, 'color1': '#000000','color2': '#000000'},
-'Houston Astros': {'lednum': 13, 'color1': '#000000','color2': '#000000'},
-'Los Angeles Angels': {'lednum': 3, 'color1': '#000000','color2': '#000000'},
-'Oakland Athletics': {'lednum': 4, 'color1': '#000000','color2': '#000000'},
-'Seattle Mariners': {'lednum': 7, 'color1': '#000000','color2': '#000000'},
-'Texas Rangers': {'lednum': 11, 'color1': '#000000','color2': '#000000'},
-'Arizona Diamondbacks': {'lednum': 2, 'color1': '#000000','color2': '#000000'},
-'Colorado Rockies': {'lednum': 9, 'color1': '#000000','color2': '#000000'},
-'Los Angeles Dodgers': {'lednum': 3, 'color1': '#000000','color2': '#000000'},
-'San Diego Padres': {'lednum': 1, 'color1': '#000000','color2': '#000000'},
-'San Francisco Giants': {'lednum': 4, 'color1': '#000000','color2': '#000000'},
+'Baltimore Orioles': {'lednum': 37, 'color1': '#FC4C02','color2': '#272515'},
+'Boston Red Sox': {'lednum': 40, 'color1': '#C8102E','color2': '#0C2340'},
+'New York Yankees': {'lednum': 39, 'color1': '#003087','color2': '#E4002C'},
+'Tampa Bay Rays': {'lednum': 15, 'color1': '#092c5c','color2': '#8fbce6'},
+'Toronto Blue Jays': {'lednum': 27, 'color1': '#134a8e','color2': '#1d2d5c'},
+'Atlanta Braves': {'lednum': 19, 'color1': '#ba0c2f','color2': '#0c2340'},
+'Miami Marlins': {'lednum': 16, 'color1': '#ed6f2e','color2': '#0077c8'},
+'New York Mets': {'lednum': 39, 'color1': '#002d72','color2': '#fc4c02'},
+'Philadelphia Phillies': {'lednum': 38, 'color1': '#ba0c2f','color2': '#000000'},
+'Washington Nationals': {'lednum': 36, 'color1': '#ba122b','color2': '#14225a'},
+'Chicago White Sox': {'lednum': 25, 'color1': '#27251F','color2': '#8a8d8f'},
+'Cleveland Indians': {'lednum': 29, 'color1': '#0c2340','color2': '#d50032'},
+'Detroit Tigers': {'lednum': 26, 'color1': '#0c2340','color2': '#fa4616'},
+'Kansas City Royals': {'lednum': 21, 'color1': '#1a4784','color2': '#BD9B60'},
+#'Minnesota Twins': {'lednum': 22, 'color1': '#000000','color2': '#000000'},
+#'Chicago Cubs': {'lednum': 25, 'color1': '#000000','color2': '#000000'},
+#'Cincinnati Reds': {'lednum': 34, 'color1': '#000000','color2': '#000000'},
+#'Milwaukee Brewers': {'lednum': 24, 'color1': '#000000','color2': '#000000'},
+#'Pittsburgh Pirates': {'lednum': 35, 'color1': '#000000','color2': '#000000'},
+#'St. Louis Cardinals': {'lednum': 31, 'color1': '#000000','color2': '#000000'},
+#'Houston Astros': {'lednum': 13, 'color1': '#000000','color2': '#000000'},
+#'Los Angeles Angels': {'lednum': 3, 'color1': '#000000','color2': '#000000'},
+#'Oakland Athletics': {'lednum': 4, 'color1': '#000000','color2': '#000000'},
+#'Seattle Mariners': {'lednum': 7, 'color1': '#000000','color2': '#000000'},
+#'Texas Rangers': {'lednum': 11, 'color1': '#000000','color2': '#000000'},
+#'Arizona Diamondbacks': {'lednum': 2, 'color1': '#000000','color2': '#000000'},
+#'Colorado Rockies': {'lednum': 9, 'color1': '#000000','color2': '#000000'},
+#'Los Angeles Dodgers': {'lednum': 3, 'color1': '#000000','color2': '#000000'},
+#'San Diego Padres': {'lednum': 1, 'color1': '#000000','color2': '#000000'},
+#'San Francisco Giants': {'lednum': 4, 'color1': '#000000','color2': '#000000'},
 'Boston Celtics': {'lednum': 40, 'color1': '#008248','color2': '#BA9653'},
 'Brooklyn Nets': {'lednum': 39, 'color1': '#FFFFFF','color2': '#000000'},
 'New York Knicks': {'lednum': 39, 'color1': '#006BB6','color2': '#f58426'},
@@ -94,6 +94,24 @@ teams = {
 import subprocess
 import serial, time, datetime
 
+gamma = [
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
+    1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
+    2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,  5,  5,
+    5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10,
+   10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
+   17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
+   25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
+   37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
+   51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
+   69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
+   90, 92, 93, 95, 96, 98, 99,101,102,104,105,107,109,110,112,114,
+  115,117,119,120,122,124,126,127,129,131,133,135,137,138,140,142,
+  144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
+  177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
+  215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 ]
+
 def execute(cmd):
     popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
     for stdout_line in iter(popen.stdout.readline, ""):
@@ -104,6 +122,14 @@ def execute(cmd):
         raise subprocess.CalledProcessError(return_code, cmd)
 
 ser = serial.Serial('/dev/ttyACM0', 38400)
+
+def preciseApply(ledNum,r,g,b,flashes):
+    ba=bytearray()
+    ba[0:8]=[ledNum,flashes,gamma[r],gamma[g],gamma[b],gamma[r],gamma[g],gamma[b],0]
+    for index,value in enumerate(ba):
+        ba[index]=min(255,value+1) #ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
+    ba[8]=int(0)
+    ser.write(ba)
 
 def application(team,points):
     points=int(points)
@@ -116,17 +142,28 @@ def application(team,points):
     col2r=int(temp[1:3],16)
     col2g=int(temp[3:5],16)
     col2b=int(temp[5:7],16)
-    print(cityNum,points,col1r,col1g,col1b,col2r,col2g,col2b)
     ba=bytearray()
-    ba[0:8]=[cityNum,points,col1r,col1g,col1b,col2r,col2g,col2b,0]
+    ba[0:8]=[cityNum,points,gamma[col1r],gamma[col1g],gamma[col1b],gamma[col2r],gamma[col2g],gamma[col2b],0]
     for index,value in enumerate(ba):
         ba[index]=min(255,value+1) #ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
     ba[8]=int(0)
-    print ser.write(ba)
+    ser.write(ba)
 
-for path in execute(["node", "sockets.js"]):
-    plusPos = path.find('+')
-    team=path[0:plusPos]
-    points = int(path[plusPos+1:])
-    application(team,points)
-    print path
+def lightup():
+    pass    
+
+def cycle():
+    for key in teams:
+        application(key,2)
+        time.sleep(2)
+def nba():
+    for path in execute(["node", "nbaSockets.js"]):
+        plusPos = path.find('+')
+        commaPos = path.find(',')
+        team=path[0:plusPos]
+        points = int(path[plusPos+1:commaPos])
+        application(team,points)
+        print path
+
+#nba()
+cycle()

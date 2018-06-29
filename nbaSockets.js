@@ -57,13 +57,14 @@ function updateNBAScore(teamAbbr,newScore){
         if(nbaScore[teamAbbr]!=newScore){
             var delta = newScore - nbaScore[teamAbbr];
             if(delta > 0){
-                console.log(nbaDict[teamAbbr] + "+" + delta);
+                console.log(nbaDict[teamAbbr] + "+" + delta + ", "+ newScore);
                 nbaScore[teamAbbr]=newScore;
             }
         }
     }
     else{
         nbaScore[teamAbbr]=newScore;
+        //console.log(nbaDict[teamAbbr] + "+" + newScore);
     }
 }
 
