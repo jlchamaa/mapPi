@@ -91,8 +91,6 @@ teams = {
 'Indianapolis Colts': {'lednum': 30, 'color1': '#003A70','color2': '#FFFFFF'},
 'Jacksonville Jaguars': {'lednum': 18, 'color1': '#006073','color2': '#D49F12'},
 'Tennessee Titans ': {'lednum': 32, 'color1': '#0C2340','color2': '#4B92DB'} };
-import subprocess
-import serial, time, datetime
 
 gamma = [
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -111,61 +109,3 @@ gamma = [
   144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
   177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
   215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 ]
-
-def execute(cmd):
-    popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
-    for stdout_line in iter(popen.stdout.readline, ""):
-        yield stdout_line 
-    popen.stdout.close()
-    return_code = popen.wait()
-    if return_code:
-        raise subprocess.CalledProcessError(return_code, cmd)
-
-ser = serial.Serial('/dev/ttyACM0', 38400)
-
-def preciseApply(ledNum,r,g,b,flashes):
-    ba=bytearray()
-    ba[0:8]=[ledNum,flashes,gamma[r],gamma[g],gamma[b],gamma[r],gamma[g],gamma[b],0]
-    for index,value in enumerate(ba):
-        ba[index]=min(255,value+1) #ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
-    ba[8]=int(0)
-    ser.write(ba)
-
-def application(team,points):
-    points=int(points)
-    cityNum=int(teams[team]['lednum'])
-    temp=teams[team]['color1']
-    col1r=int(temp[1:3],16)
-    col1g=int(temp[3:5],16)
-    col1b=int(temp[5:7],16)
-    temp=teams[team]['color2']
-    col2r=int(temp[1:3],16)
-    col2g=int(temp[3:5],16)
-    col2b=int(temp[5:7],16)
-    ba=bytearray()
-    ba[0:8]=[cityNum,points,gamma[col1r],gamma[col1g],gamma[col1b],gamma[col2r],gamma[col2g],gamma[col2b],0]
-    for index,value in enumerate(ba):
-        ba[index]=min(255,value+1) #ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
-    ba[8]=int(0)
-    ser.write(ba)
-
-def lightup():
-    pass    
-
-def cycle():
-    myTeamNames = teams.keys()
-    myTeamNames.sort()
-    for key in myTeamNames:
-        application(key,4)
-        time.sleep(6)
-def nba():
-    for path in execute(["node", "nbaSockets.js"]):
-        plusPos = path.find('+')
-        commaPos = path.find(',')
-        team=path[0:plusPos]
-        points = int(path[plusPos+1:commaPos])
-        application(team,points)
-        print path
-
-#nba()
-cycle()
