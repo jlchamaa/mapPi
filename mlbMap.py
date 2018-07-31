@@ -13,22 +13,22 @@ teams = {
 'Cleveland Indians': {'lednum': 29, 'color1': '#0c2340','color2': '#d50032'},
 'Detroit Tigers': {'lednum': 26, 'color1': '#0c2340','color2': '#fa4616'},
 'Kansas City Royals': {'lednum': 21, 'color1': '#1a4784','color2': '#BD9B60'},
-'Minnesota Twins': {'lednum': 22, 'color1': '#0C2340','color2': '#BA0C2F'},
-'Chicago Cubs': {'lednum': 25, 'color1': '#002f6C','color2': '#C8102E'},
-'Cincinnati Reds': {'lednum': 34, 'color1': '#D50032','color2': '#010101'},
-'Milwaukee Brewers': {'lednum': 24, 'color1': '#13294B','color2': '#85714D'},
-'Pittsburgh Pirates': {'lednum': 35, 'color1': '#27251F','color2': '#FFC72C'},
-'St. Louis Cardinals': {'lednum': 31, 'color1': '#BA0C2F','color2': '#0c2340'},
-'Houston Astros': {'lednum': 13, 'color1': '#002D62','color2': '#Eb6E1F'},
-'Los Angeles Angels': {'lednum': 3, 'color1': '#003263','color2': '#BA0021'},
-'Oakland Athletics': {'lednum': 4, 'color1': '#034638','color2': '#FFB81C'},
-'Seattle Mariners': {'lednum': 7, 'color1': '#0C2340','color2': '#00685E'},
-'Texas Rangers': {'lednum': 11, 'color1': '#002D72','color2': '#BA0C2F'},
-'Arizona Diamondbacks': {'lednum': 2, 'color1': '#A71930','color2': '#E3D4AD'},
-'Colorado Rockies': {'lednum': 9, 'color1': '#330072','color2': '#C4CED4'},
-'Los Angeles Dodgers': {'lednum': 3, 'color1': '#002F6C','color2': '#E4002B'},
-'San Diego Padres': {'lednum': 1, 'color1': '#041E42','color2': '#A2AAAD'},
-'San Francisco Giants': {'lednum': 4, 'color1': '#FA4616','color2': '#27251F'},
+#'Minnesota Twins': {'lednum': 22, 'color1': '#000000','color2': '#000000'},
+#'Chicago Cubs': {'lednum': 25, 'color1': '#000000','color2': '#000000'},
+#'Cincinnati Reds': {'lednum': 34, 'color1': '#000000','color2': '#000000'},
+#'Milwaukee Brewers': {'lednum': 24, 'color1': '#000000','color2': '#000000'},
+#'Pittsburgh Pirates': {'lednum': 35, 'color1': '#000000','color2': '#000000'},
+#'St. Louis Cardinals': {'lednum': 31, 'color1': '#000000','color2': '#000000'},
+#'Houston Astros': {'lednum': 13, 'color1': '#000000','color2': '#000000'},
+#'Los Angeles Angels': {'lednum': 3, 'color1': '#000000','color2': '#000000'},
+#'Oakland Athletics': {'lednum': 4, 'color1': '#000000','color2': '#000000'},
+#'Seattle Mariners': {'lednum': 7, 'color1': '#000000','color2': '#000000'},
+#'Texas Rangers': {'lednum': 11, 'color1': '#000000','color2': '#000000'},
+#'Arizona Diamondbacks': {'lednum': 2, 'color1': '#000000','color2': '#000000'},
+#'Colorado Rockies': {'lednum': 9, 'color1': '#000000','color2': '#000000'},
+#'Los Angeles Dodgers': {'lednum': 3, 'color1': '#000000','color2': '#000000'},
+#'San Diego Padres': {'lednum': 1, 'color1': '#000000','color2': '#000000'},
+#'San Francisco Giants': {'lednum': 4, 'color1': '#000000','color2': '#000000'},
 'Boston Celtics': {'lednum': 40, 'color1': '#008248','color2': '#BA9653'},
 'Brooklyn Nets': {'lednum': 39, 'color1': '#FFFFFF','color2': '#000000'},
 'New York Knicks': {'lednum': 39, 'color1': '#006BB6','color2': '#f58426'},
@@ -153,13 +153,11 @@ def lightup():
     pass    
 
 def cycle():
-    myTeamNames = teams.keys()
-    myTeamNames.sort()
-    for key in myTeamNames:
-        application(key,4)
-        time.sleep(6)
-def nba():
-    for path in execute(["node", "nbaSockets.js"]):
+    for key in teams:
+        application(key,2)
+        time.sleep(2)
+def mlb():
+    for path in execute(["node", "mlbSockets.js"]):
         plusPos = path.find('+')
         commaPos = path.find(',')
         team=path[0:plusPos]
