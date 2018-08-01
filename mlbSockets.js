@@ -1,4 +1,4 @@
-var nbaDict={
+var mlbDict={
     'ATL': 'Atlanta Braves',
     'MIA': 'Miami Marlins',
     'BOS': 'Boston Red Sox',
@@ -33,12 +33,12 @@ var nbaDict={
 const WebSocket = require('ws');
 
 const ws = new WebSocket('wss://torq.cbssports.com/torq/handler/117/7v5ku21t/websocket');
-nbaGames=['empty'];
-nbaScore={};
+mlbGames=['empty'];
+mlbScore={};
 
 function subscribeToGame(gameID){
     var obj = {"cmd":"subscribe","topics":gameID};
-    console.log(obj);
+    //console.log(obj);
     var request = JSON.stringify(JSON.stringify(obj)); //THIS THING WANTS A DOUBLE STRING IDK WHY
     ws.send(request);
 }
@@ -53,19 +53,18 @@ function auth(){
     ws.send(request);
 }
 
-function updateNBAScore(teamAbbr,newScore){
-    if(nbaScore[teamAbbr]){
-        if(nbaScore[teamAbbr]!=newScore){
-            var delta = newScore - nbaScore[teamAbbr];
+function updateMlbScore(teamAbbr,newScore){
+    if(teamAbbr in mlbScore){
+        if(mlbScore[teamAbbr]!=newScore){
+            var delta = newScore - mlbScore[teamAbbr];
             if(delta > 0){
-                console.log(nbaDict[teamAbbr] + "+" + delta + ", "+ newScore);
-                nbaScore[teamAbbr]=newScore;
+                console.log(mlbDict[teamAbbr] + "+" + delta + ", "+ newScore);
+                mlbScore[teamAbbr]=newScore;
             }
         }
     }
     else{
-        nbaScore[teamAbbr]=newScore;
-        //console.log(nbaDict[teamAbbr] + "+" + newScore);
+        mlbScore[teamAbbr]=newScore;
     }
 }
 
@@ -82,42 +81,41 @@ ws.on('error', function(error) {
   });
 
 ws.on('message', function incoming(data) {
-    console.log(data);
     if(data == 'o'){
         auth();
     }
-    if(data.includes('authorized')){
+    else if(data.includes('authorized')){
         subscribeScoreboard();
     }       
-    
-    if(data.includes('scoreboard') && ! data.includes('update') && ! data.includes('subscribe')){ //real scoreboard, not subscription confirmation
-        var slicedData = data.slice(2,-1); //turns a[json] into json
-        var temp=JSON.parse(slicedData);
-        var obj=JSON.parse(temp);
-        var games=obj.body.games;
-        if(nbaGames[0]!=games[0].abbr){
-            //we're either filling the 'empty' array, or we have a new day
-            //so empty the array and continue on
-            //console.log('fresh refill');
-            nbaGames=[];
-            for(var game in games){
-                var gameID = games[game].abbr
-                nbaGames.push(gameID);
-                subscribeToGame("/nba/gametracker/"+gameID+"/ts");
-            }
-        }
-        //else{console.log('no refill');} //data was already present, no refill
-        console.log(nbaGames);
-
+    else if(data.length < 5){
+        //console.log(data);
     }
-    
-    if(data.includes('gametracker') && data.includes('update') && ! data.includes('subscribe')){
+    else{
         var slicedData = data.slice(2,-1); //turns a[json] into json
         var temp=JSON.parse(slicedData);
         var obj=JSON.parse(temp);
-        var numOfTeams=obj.body.length;
-        for (var i=0;i<numOfTeams;i++){
-            updateNBAScore(obj.body[i].abbr,parseInt(obj.body[i].stats.points));
+        //console.log(obj);
+
+        if(data.includes('scoreboard') && ! data.includes('update') && ! data.includes('subscribe')){ //real scoreboard, not subscription confirmation
+            var games=obj.body.games;
+            if(mlbGames[0]!=games[0].abbr){
+                //we're either filling the 'empty' array, or we have a new day
+                //so empty the array and continue on
+                //console.log('fresh refill');
+                mlbGames=[];
+                for(var game in games){
+                    var gameID = games[game].abbr
+                    mlbGames.push(gameID);
+                    subscribeToGame("/mlb/gametracker/"+gameID+"/ts");
+                }
+            }
+            //else{console.log('no refill');} //data was already present, no refill
+        }
+        if(data.includes('gametracker') && data.includes('update') && ! data.includes('subscribe')){
+            var numOfTeams=obj.body.length;
+            for (var i=0;i<numOfTeams;i++){
+                updateMlbScore(obj.body[i].abbr,parseInt(obj.body[i].batting.runs));
+            }
         }
     }
 });

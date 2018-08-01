@@ -50,6 +50,7 @@ def cycle():
     for key in myTeamNames:
         application(key,4)
         time.sleep(6)
+
 def league(whichLeague):
     socketFile = whichLeague + "Sockets.js"
     for path in execute(["node", socketFile]):
@@ -60,8 +61,6 @@ def league(whichLeague):
         application(team,points)
         print path
 
-#nba()
-cycle()
 
 if __name__ == "__main__":
     funcToRun = sys.argv[1]
