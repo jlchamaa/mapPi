@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import subprocess
 import sys
 import serial
@@ -54,12 +55,14 @@ def cycle():
 def league(whichLeague):
     socketFile = whichLeague + "Sockets.js"
     for path in execute(["node", socketFile]):
+        print path
+        if path == 'close':
+            break
         plusPos = path.find('+')
         commaPos = path.find(',')
         team=path[0:plusPos]
         points = int(path[plusPos+1:commaPos])
         application(team,points)
-        print path
 
 
 if __name__ == "__main__":

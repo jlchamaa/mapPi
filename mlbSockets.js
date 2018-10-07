@@ -11,7 +11,7 @@ var mlbDict={
     'CLE': 'Cleveland Indians',
     'NYY': 'New York Yankees',
     'TB' : 'Tampa Bay Rays',
-    'STL': 'St. Louis Carindals',
+    'STL': 'St. Louis Cardinals',
     'CIN': 'Cincinnati Reds',
     'SD' : 'San Diego Padres',
     'NYM': 'New York Mets',
@@ -22,7 +22,7 @@ var mlbDict={
     'WAS': 'Washington Nationals',
     'MIL': 'Milwaukee Brewers',
     'DET': 'Detroit Tigers',
-    'KC' : 'Kansas City Rotals',
+    'KC' : 'Kansas City Royals',
     'HOU': 'Houston Astros',
     'COL': 'Colorado Rockies',
     'CHW': 'Chicago White Sox',
@@ -69,7 +69,7 @@ function updateMlbScore(teamAbbr,newScore){
 }
 
 ws.on('open', function open() {
-    console.log('connected')
+    //console.log('connected')
 });
 
 ws.on('close', function close() {
