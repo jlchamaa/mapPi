@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import subprocess
+import re
 import sys
 import serial
 import time
@@ -55,14 +56,18 @@ def cycle():
 def league(whichLeague):
     socketFile = whichLeague + "Sockets.js"
     for path in execute(["node", socketFile]):
-        print path
         if path == 'close':
             break
-        plusPos = path.find('+')
-        commaPos = path.find(',')
-        team=path[0:plusPos]
-        points = int(path[plusPos+1:commaPos])
-        application(team,points)
+        matches = re.search("([\w\s]*)\+(\d{1,2}), (\d{1,3})", path)
+        team = matches.group(1)
+        delta = matches.group(2)
+        total_points = matches.group(3)
+        application(team, delta)
+        print "{} {} {} {}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                   team,
+                                   delta,
+                                   total_points,
+                                   )
 
 
 if __name__ == "__main__":
