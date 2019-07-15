@@ -67,7 +67,7 @@ def league(whichLeague):
     for path in execute(["node", socketFile]):
         if path == 'close':
             break
-        matches = re.search("([\w\s]*)\+(\d{1,2}), (\d{1,3})", path)
+        matches = re.search("([\w\s\.]*)\+(\d{1,2}), (\d{1,3})", path)
         team = matches.group(1)
         delta = matches.group(2)
         total_points = matches.group(3)
