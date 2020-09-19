@@ -74,7 +74,7 @@ teams = {
 'Denver Broncos': {'lednum': 9, 'color1': '#FC4C02','color2': '#0C2340'},
 'Kansas City Chiefs': {'lednum': 21, 'color1': '#C8102E','color2': '#FFB81C'},
 'Los Angeles Chargers': {'lednum': 3, 'color1': '#0072CE','color2': '#FFB81C'},
-'Oakland Raiders': {'lednum': 4, 'color1': '#101820','color2': '#A5ACAF'},
+'Las Vegas Raiders': {'lednum': 4, 'color1': '#101820','color2': '#A5ACAF'},
 'Chicago Bears': {'lednum': 25, 'color1': '#051C2C','color2': '#DC4405'},
 'Detroit Lions': {'lednum': 26, 'color1': '#0069B1','color2': '#FFFFFF'},
 'Green Bay Packers': {'lednum': 23, 'color1': '#175E33','color2': '#FFB81C'},

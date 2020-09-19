@@ -14,7 +14,7 @@ var nbaDict={
 'DEN':'Denver Broncos',
 'KC':'Kansas City Chiefs',
 'LAC':'Los Angeles Chargers',
-'OAK':'Oakland Raiders',
+'LV':'Las Vegas Raiders',
 'CHI':'Chicago Bears',
 'DET':'Detroit Lions',
 'GB':'Green Bay Packers',

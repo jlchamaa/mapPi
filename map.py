@@ -65,9 +65,13 @@ def cycle():
 def league(whichLeague):
     socketFile = whichLeague + "Sockets.js"
     for path in execute(["node", socketFile]):
-        if path == 'close':
-            break
         matches = re.search("([\w\s\.]*)\+(\d{1,2}), (\d{1,3})", path)
+        if matches is None:
+            if path.startswith('close'):
+                print("Closing down.")
+                break
+            print("Unknown line: {}".format(path))
+            continue
         team = matches.group(1)
         delta = matches.group(2)
         total_points = matches.group(3)
