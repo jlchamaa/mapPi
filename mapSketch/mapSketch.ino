@@ -60,10 +60,15 @@ void applyColor(byte city, byte r, byte g, byte b){
 
 void poop(){
   for (int i=0;i<40;i++){
-      strip.setPixelColor(i,strip.Color(0,10,0));
+      strip.setPixelColor(i,strip.Color(0,30,0));
     }
     strip.show();
-    delay(50000);
+    delay(500);
+  for (int i=0;i<40;i++){
+      strip.setPixelColor(i,strip.Color(30,0,0));
+    }
+    strip.show();
+    delay(500);
     
   }
 void loop() {
@@ -100,5 +105,3 @@ for (int i=0 ; i<10 ; i++){
 
 delay(500);
 }
-
-
