@@ -96,7 +96,7 @@ ws.on('message', function incoming(data) {
         var obj=JSON.parse(temp);
         //console.log(obj);
 
-        if(data.includes('scoreboard') && ! data.includes('update') && ! data.includes('subscribe')){ //real scoreboard, not subscription confirmation
+        if(data.includes('scoreboard') && ! data.includes('update') && ! data.includes('heartbeat') && ! data.includes('subscribe')){ //real scoreboard, not subscription confirmation
             var games=obj.body.games;
             if(mlbGames[0]!=games[0].abbr){
                 //we're either filling the 'empty' array, or we have a new day

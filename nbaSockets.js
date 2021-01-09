@@ -69,10 +69,11 @@ function updateNBAScore(teamAbbr,newScore){
 }
 
 ws.on('open', function open() {
-    //console.log('connected')
+    console.log('connected')
 });
 
-ws.on('close', function close() {
+ws.on('close', function close(data) {
+    console.log(data)
     console.log('close')
 });
 
@@ -81,7 +82,7 @@ ws.on('error', function(error) {
   });
 
 ws.on('message', function incoming(data) {
-    //console.log(data);
+    console.log(data);
     if(data == 'o'){
         auth();
     }
@@ -89,7 +90,7 @@ ws.on('message', function incoming(data) {
         subscribeScoreboard();
     }       
     
-    if(data.includes('scoreboard') && ! data.includes('update') && ! data.includes('subscribe')){ //real scoreboard, not subscription confirmation
+    if(data.includes('scoreboard') && ! data.includes('update') && ! data.includes('heartbeat') && ! data.includes('subscribe')){ //real scoreboard, not subscription confirmation
         var slicedData = data.slice(2,-1); //turns a[json] into json
         var temp=JSON.parse(slicedData);
         var obj=JSON.parse(temp);

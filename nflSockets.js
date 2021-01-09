@@ -91,7 +91,7 @@ ws.on('message', function incoming(data) {
         subscribeScoreboard();
     }       
     
-    if(data.includes('scoreboard') && ! data.includes('update') && ! data.includes('subscribe')){ //real scoreboard, not subscription confirmation
+    if(data.includes('scoreboard') && ! data.includes('update') && ! data.includes('heartbeat') && ! data.includes('subscribe')){ //real scoreboard, not subscription confirmation
         var slicedData = data.slice(2,-1); //turns a[json] into json
         var temp=JSON.parse(slicedData);
         var obj=JSON.parse(temp);
