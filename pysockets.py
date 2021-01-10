@@ -1,19 +1,22 @@
 #!/usr/bin/env python3.8
 import asyncio
 import json
-import serial
+# import serial
+import re
 import websockets
 from teams import teams, gamma
 
 
-ser = serial.Serial('/dev/ttyACM0', 38400)
+# ser = serial.Serial('/dev/ttyACM0', 38400)
+re.compile("")
 
 
 class ScoreBoard:
-    def __init__(self, league):
-        self.scores = {}
+    def __init__(self):
+        self.mlb = {}
+        self.nba = {}
+        self.nfl = {}
         self.games = set()
-        self.league = league
 
     def blink_map(self, team, delta):
         points = int(delta)
@@ -32,18 +35,19 @@ class ScoreBoard:
             # ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
             ba[index] = min(255, value + 1)
         ba[8] = int(0)
-        ser.write(ba)
+        # ser.write(ba)
 
-    def record_score(self, team, new_score):
-        old_score = self.scores.get(team, 0)
-        self.scores[team] = new_score
+    def record_score(self, league, team, new_score):
+        scores = getattr(self, league)
+        old_score = scores.get(team, 0)
+        scores[team] = new_score
         delta = new_score - old_score
         if delta > 0 and delta < 10:
-            print("{} scores {} -> {}".format(team, old_score, new_score))
-            self.blink_map(team, new_score - old_score)
+            # self.blink_map(team, new_score - old_score)
+            print("({}) {} scores {} -> {}".format(league, team, old_score, new_score))
 
 
-sb = ScoreBoard("nba")
+sb = ScoreBoard()
 
 
 def destring(obj):
@@ -59,7 +63,7 @@ def tostring(obj):
 
 
 async def subscribe_scoreboard(ws):
-    req = {"cmd": "subscribe", "topics": ["/nba/scoreboard"]}
+    req = {"cmd": "subscribe", "topics": ["/nba/scoreboard", "/nfl/scoreboard"]}
     await ws.send(tostring(req))
 
 
@@ -71,6 +75,50 @@ async def subscribe_to_game_topic(ws, game_topic):
 async def auth(ws):
     req = {"cmd": "login", "access_token": "64d1553ce024ab863adf69cff277b1f2ed75d961"}
     await ws.send(tostring(req))
+
+
+def parse_nba_update(data):
+    try:
+        eventType = data["eventType"]
+        if eventType == "setState":
+            teams = data["body"]["ts"]
+        elif eventType == "update":
+            teams = data["body"]
+        for team_data in teams:
+            team_id = team_data["abbr"]
+            team_score = int(team_data["stats"]["points"])
+            sb.record_score("nba", team_id, team_score)
+    except Exception as e:
+        print(json.dumps(data, indent=2, sort_keys=True))
+        print("Problem in the NBA")
+        print(e)
+
+
+def parse_nfl_update(data):
+    try:
+        teams = re.search(r"_(\w{2,3})@(\w{2,3})", data["topic"]).groups()
+        if "scores" in data["body"]:
+            score_list = data["body"]["scores"]
+            if len(score_list) > 0:
+                score_obj = score_list[-1]
+            else:
+                return
+        else:
+            score_obj = data["body"][0]
+        sb.record_score("nfl", teams[0], int(score_obj["away_score"]))
+        sb.record_score("nfl", teams[1], int(score_obj["home_score"]))
+    except Exception as e:
+        print(json.dumps(data, indent=2, sort_keys=True))
+        print("Problem in the NFL")
+        print(e)
+
+
+def parse_update(data):
+    league = data["topic"][1:4]
+    if league == "nba":
+        parse_nba_update(data)
+    if league == "nfl":
+        parse_nfl_update(data)
 
 
 async def handle(message, ws):
@@ -88,57 +136,46 @@ async def handle(message, ws):
             await subscribe_scoreboard(ws)
 
         # top-line scoreboard update
-        elif data.get("topic") == "/nba/scoreboard":
-            if data.get("eventType") == "setState":
-                for game_info in data["body"]["games"]:
-                    game_id = game_info["abbr"]
-                    game_topic = "/nba/gametracker/{}/ts".format(game_id)
-                    if game_topic in sb.games:
-                        continue
-                    sb.games.add(game_topic)
-                    print("subscribing to {}".format(game_topic))
-                    await subscribe_to_game_topic(ws, game_topic)
+        elif "scoreboard" in data.get("topic") and data.get("eventType") == "setState":
+            league = data["topic"][1:4]
+            for game_info in data["body"]["games"]:
+                game_id = game_info["abbr"]
+                if league == "nfl":
+                    game_topic = "/{}/gametracker/{}/scores".format(league, game_id)
+                if league == "nba":
+                    game_topic = "/{}/gametracker/{}/ts".format(league, game_id)
+                if game_topic in sb.games:
+                    continue
+                sb.games.add(game_topic)
+                print("subscribing to {}".format(game_topic))
+                await subscribe_to_game_topic(ws, game_topic)
 
         # per-game update
-        elif data.get("topic") in sb.games:
-            if data.get("body", False):  # non-subscriptions
-                eventType = data["eventType"]
-                if eventType == "setState":
-                    print("setting state for {}".format(data.get("topic")))
-                    for team in data["body"]["ts"]:
-                        team_id = team["abbr"]
-                        team_score = int(team["stats"]["points"])
-                        sb.record_score(team_id, team_score)
-                elif eventType == "update":
-                    for team in data["body"]:
-                        team_id = team["abbr"]
-                        team_score = int(team["stats"]["points"])
-                        sb.record_score(team_id, team_score)
-        else:
-            print(data)
+        elif data.get("topic") in sb.games and data.get("body", False):
+            parse_update(data)
+
+        # else:
+        #     print(data)
 
     else:
         print(message)
 
 
-async def try_nba():
+async def try_map():
     uri = "wss://torq.cbssports.com/torq/handler/117/7v5ku21t/websocket"
-    result = "open"
-    async with websockets.connect(uri, ssl=True) as ws:
-        while result != "close":
-            try:
+    try:
+        async with websockets.connect(uri, ssl=True) as ws:
+            while True:
                 message = await ws.recv()
-                result = await handle(message, ws)
-            except websockets.exceptions.ConnectionClosedError:
-                return True
-        return False
+                await handle(message, ws)
+    except websockets.exceptions.ConnectionClosedError as we:
+        print(we)
 
 
 def main():
     el = asyncio.get_event_loop()
-    trying = True
-    while trying:
-        trying = el.run_until_complete(try_nba())
+    while True:
+        el.run_until_complete(try_map())
         print("died for some reason")
 
 
