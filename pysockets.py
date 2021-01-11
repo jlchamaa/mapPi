@@ -1,13 +1,20 @@
 #!/usr/bin/env python3.8
 import asyncio
 import json
-# import serial
+import logging
+import serial
 import re
+import time
 import websockets
 from teams import teams, gamma
 
 
-# ser = serial.Serial('/dev/ttyACM0', 38400)
+logging.basicConfig(
+    level="INFO",
+    format='%(asctime)-15s %(message)s',
+)
+log = logging.getLogger("map")
+ser = serial.Serial('/dev/ttyACM0', 38400)
 re.compile("")
 
 
@@ -18,14 +25,17 @@ class ScoreBoard:
         self.nfl = {}
         self.games = set()
 
-    def blink_map(self, team, delta):
+    def clear_games(self):
+        self.games = set()
+
+    def blink_map(self, league, team, delta):
         points = int(delta)
-        cityNum = int(teams[team]['lednum'])
-        temp = teams[team]['color1']
+        cityNum = int(teams[league][team]['lednum'])
+        temp = teams[league][team]['color1']
         col1r = int(temp[1:3], 16)
         col1g = int(temp[3:5], 16)
         col1b = int(temp[5:7], 16)
-        temp = teams[team]['color2']
+        temp = teams[league][team]['color2']
         col2r = int(temp[1:3], 16)
         col2g = int(temp[3:5], 16)
         col2b = int(temp[5:7], 16)
@@ -35,7 +45,7 @@ class ScoreBoard:
             # ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
             ba[index] = min(255, value + 1)
         ba[8] = int(0)
-        # ser.write(ba)
+        ser.write(ba)
 
     def record_score(self, league, team, new_score):
         scores = getattr(self, league)
@@ -43,8 +53,8 @@ class ScoreBoard:
         scores[team] = new_score
         delta = new_score - old_score
         if delta > 0 and delta < 10:
-            # self.blink_map(team, new_score - old_score)
-            print("({}) {} scores {} -> {}".format(league, team, old_score, new_score))
+            self.blink_map(league, team, new_score - old_score)
+            log.info("({}) {} scores {} -> {}".format(league, team, old_score, new_score))
 
 
 sb = ScoreBoard()
@@ -89,9 +99,9 @@ def parse_nba_update(data):
             team_score = int(team_data["stats"]["points"])
             sb.record_score("nba", team_id, team_score)
     except Exception as e:
-        print(json.dumps(data, indent=2, sort_keys=True))
-        print("Problem in the NBA")
-        print(e)
+        log.info(json.dumps(data, indent=2, sort_keys=True))
+        log.warning("Problem in the NBA")
+        log.info(e)
 
 
 def parse_nfl_update(data):
@@ -108,9 +118,9 @@ def parse_nfl_update(data):
         sb.record_score("nfl", teams[0], int(score_obj["away_score"]))
         sb.record_score("nfl", teams[1], int(score_obj["home_score"]))
     except Exception as e:
-        print(json.dumps(data, indent=2, sort_keys=True))
-        print("Problem in the NFL")
-        print(e)
+        log.info(json.dumps(data, indent=2, sort_keys=True))
+        log.warning("Problem in the NFL")
+        log.info(e)
 
 
 def parse_update(data):
@@ -123,7 +133,7 @@ def parse_update(data):
 
 async def handle(message, ws):
     if message == "o":
-        print("auth time")
+        log.info("auth time")
         await auth(ws)
 
     elif message == "h":
@@ -132,7 +142,7 @@ async def handle(message, ws):
     elif message[0] == "a":
         data = (destring(message[2:-1]))
         if data.get("authorized", None) == "ok":
-            print("authorized. getting_scoreboard")
+            log.info("authorized. getting_scoreboard")
             await subscribe_scoreboard(ws)
 
         # top-line scoreboard update
@@ -147,7 +157,7 @@ async def handle(message, ws):
                 if game_topic in sb.games:
                     continue
                 sb.games.add(game_topic)
-                print("subscribing to {}".format(game_topic))
+                log.info("subscribing to {}".format(game_topic))
                 await subscribe_to_game_topic(ws, game_topic)
 
         # per-game update
@@ -158,7 +168,7 @@ async def handle(message, ws):
         #     print(data)
 
     else:
-        print(message)
+        log.info(message)
 
 
 async def try_map():
@@ -168,15 +178,18 @@ async def try_map():
             while True:
                 message = await ws.recv()
                 await handle(message, ws)
-    except websockets.exceptions.ConnectionClosedError as we:
-        print(we)
+    except (websockets.exceptions.InvalidStatusCode, websockets.exceptions.ConnectionClosedError) as e:
+        log.warning(e)
+
 
 
 def main():
     el = asyncio.get_event_loop()
     while True:
         el.run_until_complete(try_map())
-        print("died for some reason")
+        log.warning("died for some reason")
+        sb.clear_games()
+        time.sleep(5)
 
 
 if __name__ == "__main__":
