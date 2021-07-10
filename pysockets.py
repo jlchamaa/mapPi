@@ -15,7 +15,6 @@ logging.basicConfig(
 )
 log = logging.getLogger("map")
 ser = serial.Serial('/dev/ttyACM0', 38400)
-re.compile("")
 
 
 class ScoreBoard:
@@ -164,9 +163,6 @@ async def handle(message, ws):
         elif data.get("topic") in sb.games and data.get("body", False):
             parse_update(data)
 
-        # else:
-        #     print(data)
-
     else:
         log.info(message)
 
@@ -184,13 +180,24 @@ async def try_map():
 
 
 def main():
-    el = asyncio.get_event_loop()
     while True:
-        el.run_until_complete(try_map())
-        log.warning("died for some reason")
-        sb.clear_games()
+        try:
+            el = asyncio.get_event_loop()
+            el.run_until_complete(try_map())
+            log.warning("died for some reason")
+            sb.clear_games()
+            time.sleep(5)
+        except Exception as e:
+            log.warning("died for some very bad reason")
+            log.warning(e)
+
+
+def cycle():
+    sb = ScoreBoard()
+    while True:
+        sb.blink_map("nba", "LAL", 3)
         time.sleep(5)
 
-
 if __name__ == "__main__":
+    # cycle()
     main()
