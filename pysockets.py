@@ -72,7 +72,7 @@ def tostring(obj):
 
 
 async def subscribe_scoreboard(ws):
-    req = {"cmd": "subscribe", "topics": ["/nba/scoreboard", "/nfl/scoreboard"]}
+    req = {"cmd": "subscribe", "topics": ["/mlb/scoreboard", "/nfl/scoreboard", "/nba/scoreboard"]}
     await ws.send(tostring(req))
 
 
@@ -122,12 +122,31 @@ def parse_nfl_update(data):
         log.info(e)
 
 
+def parse_mlb_update(data):
+    try:
+        et = data["eventType"]
+        if et != "update":
+            return
+        for entry in data["body"]:
+            team_id = entry["abbr"]
+            score = int(entry["batting"]["runs"])
+            sb.record_score("mlb", team_id, score)
+    except Exception as e:
+        log.info("Problem in the MLB")
+        print(json.dumps(data, indent=2))
+
+
 def parse_update(data):
     league = data["topic"][1:4]
     if league == "nba":
         parse_nba_update(data)
-    if league == "nfl":
+    elif league == "nfl":
         parse_nfl_update(data)
+    elif league == "mlb":
+        parse_mlb_update(data)
+    else:
+        log.info(f"Can't pase update with topic {data['topic']}")
+
 
 
 async def handle(message, ws):
@@ -140,18 +159,21 @@ async def handle(message, ws):
 
     elif message[0] == "a":
         data = (destring(message[2:-1]))
+        topic = data.get("topic")
         if data.get("authorized", None) == "ok":
             log.info("authorized. getting_scoreboard")
             await subscribe_scoreboard(ws)
 
         # top-line scoreboard update
-        elif "scoreboard" in data.get("topic") and data.get("eventType") == "setState":
-            league = data["topic"][1:4]
+        elif "scoreboard" in topic and data.get("eventType") == "setState":
+            league = topic[1:4]
             for game_info in data["body"]["games"]:
                 game_id = game_info["abbr"]
                 if league == "nfl":
                     game_topic = "/{}/gametracker/{}/scores".format(league, game_id)
                 if league == "nba":
+                    game_topic = "/{}/gametracker/{}/ts".format(league, game_id)
+                if league == "mlb":
                     game_topic = "/{}/gametracker/{}/ts".format(league, game_id)
                 if game_topic in sb.games:
                     continue
@@ -160,8 +182,10 @@ async def handle(message, ws):
                 await subscribe_to_game_topic(ws, game_topic)
 
         # per-game update
-        elif data.get("topic") in sb.games and data.get("body", False):
+        elif topic in sb.games and data.get("body", False):
             parse_update(data)
+        else:
+            log.debug("Funny new message")
 
     else:
         log.info(message)
