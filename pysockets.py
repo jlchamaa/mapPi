@@ -12,6 +12,7 @@ from teams import teams, gamma
 logging.basicConfig(
     level="INFO",
     format='%(asctime)-15s %(message)s',
+    # filename="map.log",
 )
 log = logging.getLogger("map")
 ser = serial.Serial('/dev/ttyACM0', 38400)
@@ -77,7 +78,7 @@ async def subscribe_scoreboard(ws):
 
 
 async def subscribe_to_game_topic(ws, game_topic):
-    req = {"cmd": "subscribe", "topics": game_topic}
+    req = {"cmd": "subscribe", "topics": [game_topic]}
     await ws.send(tostring(req))
 
 
@@ -133,7 +134,8 @@ def parse_mlb_update(data):
             sb.record_score("mlb", team_id, score)
     except Exception as e:
         log.info("Problem in the MLB")
-        print(json.dumps(data, indent=2))
+        log.info(e)
+        log.info(json.dumps(data, indent=2))
 
 
 def parse_update(data):
@@ -185,7 +187,7 @@ async def handle(message, ws):
         elif topic in sb.games and data.get("body", False):
             parse_update(data)
         else:
-            log.debug("Funny new message")
+            log.debug("unimportant message")
 
     else:
         log.info(message)
