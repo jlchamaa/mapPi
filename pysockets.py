@@ -3,6 +3,7 @@ import asyncio
 import json
 import logging
 import serial
+import traceback
 import re
 import time
 import websockets
@@ -88,6 +89,7 @@ async def auth(ws):
 
 
 def parse_nba_update(data):
+    log.debug("NBA Update")
     try:
         eventType = data["eventType"]
         if eventType == "setState":
@@ -99,12 +101,14 @@ def parse_nba_update(data):
             team_score = int(team_data["stats"]["points"])
             sb.record_score("nba", team_id, team_score)
     except Exception as e:
+        traceback.print_exc()
         log.info(json.dumps(data, indent=2, sort_keys=True))
         log.warning("Problem in the NBA")
         log.info(e)
 
 
 def parse_nfl_update(data):
+    log.info("NFL Update")
     try:
         teams = re.search(r"_(\w{2,3})@(\w{2,3})", data["topic"]).groups()
         if "scores" in data["body"]:
@@ -124,6 +128,7 @@ def parse_nfl_update(data):
 
 
 def parse_mlb_update(data):
+    log.info("MLB Update")
     try:
         et = data["eventType"]
         if et != "update":
@@ -148,7 +153,6 @@ def parse_update(data):
         parse_mlb_update(data)
     else:
         log.info(f"Can't pase update with topic {data['topic']}")
-
 
 
 async def handle(message, ws):
@@ -201,8 +205,8 @@ async def try_map():
                 message = await ws.recv()
                 await handle(message, ws)
     except (websockets.exceptions.InvalidStatusCode, websockets.exceptions.ConnectionClosedError) as e:
+        log.warning("Death was a websocket issue")
         log.warning(e)
-
 
 
 def main():
