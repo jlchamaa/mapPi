@@ -1,8 +1,8 @@
-#!/usr/bin/env python3.8
+#!/usr/bin/env python3
 import asyncio
 import json
 import logging
-import serial
+# import serial
 import traceback
 import re
 import time
@@ -16,7 +16,7 @@ logging.basicConfig(
     # filename="map.log",
 )
 log = logging.getLogger("map")
-ser = serial.Serial('/dev/ttyACM0', 38400)
+# ser = serial.Serial('/dev/ttyACM0', 38400)
 
 
 class ScoreBoard:
@@ -46,7 +46,7 @@ class ScoreBoard:
             # ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
             ba[index] = min(255, value + 1)
         ba[8] = int(0)
-        ser.write(ba)
+        # ser.write(ba)
 
     def record_score(self, league, team, new_score):
         scores = getattr(self, league)
