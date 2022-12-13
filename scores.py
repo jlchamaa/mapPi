@@ -3,6 +3,8 @@ from time import sleep
 from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.widgets import Header, Footer, Static, DataTable
+from textual.reactive import reactive
+from textual.widget import Widget
 from datetime import datetime
 from teams import teams
 import csv
@@ -20,9 +22,11 @@ CSV = """lane,swimmer,country,time
 
 class TableApp(App):
     BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
+    reacter = reactive("garbage")
 
     def compose(self) -> ComposeResult:
         yield DataTable()
+        yield ScoreUpdate()
 
     def on_mount(self) -> None:
         csv_text = ""
@@ -30,23 +34,27 @@ class TableApp(App):
             csv_text = file.read()
         # print(csv_text)
         self.table = self.query_one(DataTable)
-        # rows = csv.reader(io.StringIO(csv_text))
+        rows = csv.reader(io.StringIO(csv_text))
         # rows = csv.reader(io.StringIO(CSV))
-        # self.table.add_columns(*next(rows))
-        # self.table.add_rows(rows)
-        self._mydata = "One"
-        self.table.add_column("hello")
-        self.table.add_row(self._mydata)
-        self._mydata = "TWO"
-        self.table.refresh()
+        self.table.add_columns(*next(rows))
+        self.table.add_rows(rows)
+        self.table.add_row("first", self.reacter, "third")
 
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""
         self.dark = not self.dark
-        # self.table.clear()
-        self.table.refresh_cell(2,2)
+        self.reacter = "cute"
+        self.table.refresh_cell(2,1)
 
+    def watch_reacter(self, older, newer):
+        pass
 
+        
+
+class ScoreUpdate(Widget):
+    who = reactive("name", layout=True)  
+    def render(self) -> str:
+        return f"Hello, {self.who}!"
 
 # class Score:
 #     def __init__(self, league, team, old_score, new_score, last_updated) -> None:
@@ -78,7 +86,7 @@ def initialize_csv():
     nba = list(teams["nba"].keys())
     nba.sort()
     # print("last_updated,league,team,old_score,new_score")
-    for team in nba:
+    for team in nba[0:2]:
         team_data = [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "nba", team, 0, 0]
         data.append(team_data)
         # print("{},nba,{},0,0".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"),team))
