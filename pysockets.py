@@ -9,6 +9,10 @@ import time
 import websockets
 from teams import teams, gamma
 
+from textual.app import App
+from textual.reactive import reactive
+from textual.widget import Widget
+
 
 logging.basicConfig(
     level="INFO",
@@ -59,6 +63,32 @@ class ScoreBoard:
 
 
 sb = ScoreBoard()
+
+
+class TableApp(App):
+    BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
+
+    def compose(self):
+        yield ScoreUpdate()
+
+    def action_toggle_dark(self) -> None:
+        """An action to toggle dark mode."""
+        self.dark = not self.dark
+        w = self.query_one(ScoreUpdate)
+        w.change_who("cute")
+
+    def watch_reacter(self, older, newer):
+        pass
+
+
+class ScoreUpdate(Widget):
+    who = reactive(sb.nba, layout=True)
+
+    def render(self) -> str:
+        return f"Hello, {self.who}!"
+
+    def change_who(self, new_who):
+        self.who = new_who
 
 
 def destring(obj):
@@ -209,17 +239,14 @@ async def try_map():
         log.warning(e)
 
 
-def main():
-    while True:
-        try:
-            el = asyncio.get_event_loop()
-            el.run_until_complete(try_map())
-            log.warning("died for some reason")
-            sb.clear_games()
-            time.sleep(5)
-        except Exception as e:
-            log.warning("died for some very bad reason")
-            log.warning(e)
+async def start_table():
+    app = TableApp()
+    await app.run_async()
+
+
+async def main():
+    asyncio.create_task(try_map())
+    await start_table()
 
 
 def cycle():
@@ -228,6 +255,7 @@ def cycle():
         sb.blink_map("nba", "LAL", 3)
         time.sleep(5)
 
+
 if __name__ == "__main__":
     # cycle()
-    main()
+    asyncio.run(main())
