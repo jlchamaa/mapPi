@@ -1,0 +1,10 @@
+ScoreUpdate {
+  height: 8;
+  width: 30%;
+  content-align: center middle;
+  background: blue;
+  color: white;
+}
+Horizontal {
+    background: green;
+}

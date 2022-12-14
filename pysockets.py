@@ -4,14 +4,17 @@ import json
 import logging
 # import serial
 import traceback
+import random
 import re
-import time
 import websockets
 from teams import teams, gamma
 
 from textual.app import App
+from textual.containers import Horizontal
+from textual.message import Message
 from textual.reactive import reactive
 from textual.widget import Widget
+from textual.widgets import Static, TextLog
 
 
 logging.basicConfig(
@@ -20,6 +23,7 @@ logging.basicConfig(
     # filename="map.log",
 )
 log = logging.getLogger("map")
+log.write = lambda x: log.info(x)
 # ser = serial.Serial('/dev/ttyACM0', 38400)
 
 
@@ -45,7 +49,13 @@ class ScoreBoard:
         col2g = int(temp[3:5], 16)
         col2b = int(temp[5:7], 16)
         ba = bytearray()
-        ba[0:8] = [cityNum, points, gamma[col1r], gamma[col1g], gamma[col1b], gamma[col2r], gamma[col2g], gamma[col2b], 0]
+        ba[0:8] = [
+            cityNum,
+            points,
+            gamma[col1r], gamma[col1g], gamma[col1b],
+            gamma[col2r], gamma[col2g], gamma[col2b],
+            0,  # trailing zero needed for Arduino
+        ]
         for index, value in enumerate(ba):
             # ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
             ba[index] = min(255, value + 1)
@@ -59,36 +69,85 @@ class ScoreBoard:
         delta = new_score - old_score
         if delta > 0 and delta < 10:
             self.blink_map(league, team, new_score - old_score)
-            log.info("({}) {} scores {} -> {}".format(league, team, old_score, new_score))
+            # log.write("({}) {} scores {} -> {}".format(league, team, old_score, new_score))
 
 
-sb = ScoreBoard()
-
-
-class TableApp(App):
-    BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
+class MApp(App):
+    CSS_PATH = "my.css"
+    BINDINGS = [
+        ("s", "trigger_score", "Trigger random scoring event"),
+        ("q", "quit_app", "Quit"),
+        ("e", "enable_log", "Enable the TextLog"),
+    ]
 
     def compose(self):
-        yield ScoreUpdate()
+        p = Proxy()
+        yield p
+        ls = []
+        for league in [p.sb.nba, p.sb.nfl, p.sb.mlb]:
+            s = ScoreUpdate()
+            s.change_who(league)
+            ls.append(s)
+        yield Horizontal(
+            ls[0],
+            ls[1],
+            ls[2],
+        )
+        yield MyTextLog()
 
-    def action_toggle_dark(self) -> None:
-        """An action to toggle dark mode."""
-        self.dark = not self.dark
-        w = self.query_one(ScoreUpdate)
-        w.change_who("cute")
+    def get_proxy(self):
+        return self.query_one(Proxy)
+
+    def get_log(self):
+        return self.query_one(TextLog)
+
+    def action_quit_app(self):
+        self.exit()
+
+    def action_enable_log(self):
+        self.get_log().write("Try this!")
+
+    def action_trigger_score(self) -> None:
+        try:
+            i = random.randint(0, 2)
+            rand_league = list(teams.keys())[i]
+            league_teams = list(teams[rand_league].keys())
+            i = random.randrange(len(league_teams))
+            rand_team = league_teams[i]
+            scoring = random.randint(1, 3)
+            sb = self.get_proxy().sb
+            new_score = getattr(sb, rand_league).get(rand_team, 0) + scoring
+            sb.record_score(rand_league, rand_team, new_score)
+            self.get_log().write(f"{rand_league}: {rand_team} +{scoring} {new_score}")
+            self.refresh()
+
+        except Exception as e:
+            self.get_log().write(e)
 
     def watch_reacter(self, older, newer):
         pass
 
 
+class MyTextLog(TextLog):
+    def on_mount(self) -> None:
+        self.styles.height = 20
+
+
 class ScoreUpdate(Widget):
-    who = reactive(sb.nba, layout=True)
+    who = reactive({}, layout=True)
 
     def render(self) -> str:
-        return f"Hello, {self.who}!"
+        return json.dumps(self.who, sort_keys=True, indent=2)
 
     def change_who(self, new_who):
         self.who = new_who
+
+
+class Proxy(Static):
+    sb = reactive(ScoreBoard())
+
+    class Topical(Message):
+        pass
 
 
 def destring(obj):
@@ -119,7 +178,7 @@ async def auth(ws):
 
 
 def parse_nba_update(data):
-    log.debug("NBA Update")
+    log.write("NBA Update")
     try:
         eventType = data["eventType"]
         if eventType == "setState":
@@ -132,13 +191,13 @@ def parse_nba_update(data):
             sb.record_score("nba", team_id, team_score)
     except Exception as e:
         traceback.print_exc()
-        log.info(json.dumps(data, indent=2, sort_keys=True))
-        log.warning("Problem in the NBA")
-        log.info(e)
+        log.write(json.dumps(data, indent=2, sort_keys=True))
+        log.write("Problem in the NBA")
+        log.write(e)
 
 
 def parse_nfl_update(data):
-    log.info("NFL Update")
+    log.write("NFL Update")
     try:
         teams = re.search(r"_(\w{2,3})@(\w{2,3})", data["topic"]).groups()
         if "scores" in data["body"]:
@@ -152,13 +211,13 @@ def parse_nfl_update(data):
         sb.record_score("nfl", teams[0], int(score_obj["away_score"]))
         sb.record_score("nfl", teams[1], int(score_obj["home_score"]))
     except Exception as e:
-        log.info(json.dumps(data, indent=2, sort_keys=True))
-        log.warning("Problem in the NFL")
-        log.info(e)
+        log.write(json.dumps(data, indent=2, sort_keys=True))
+        log.write("Problem in the NFL")
+        log.write(e)
 
 
 def parse_mlb_update(data):
-    log.info("MLB Update")
+    log.write("MLB Update")
     try:
         et = data["eventType"]
         if et != "update":
@@ -168,9 +227,9 @@ def parse_mlb_update(data):
             score = int(entry["batting"]["runs"])
             sb.record_score("mlb", team_id, score)
     except Exception as e:
-        log.info("Problem in the MLB")
-        log.info(e)
-        log.info(json.dumps(data, indent=2))
+        log.write("Problem in the MLB")
+        log.write(e)
+        log.write(json.dumps(data, indent=2))
 
 
 def parse_update(data):
@@ -182,12 +241,12 @@ def parse_update(data):
     elif league == "mlb":
         parse_mlb_update(data)
     else:
-        log.info(f"Can't pase update with topic {data['topic']}")
+        log.write(f"Can't pase update with topic {data['topic']}")
 
 
 async def handle(message, ws):
     if message == "o":
-        log.info("auth time")
+        log.write("auth time")
         await auth(ws)
 
     elif message == "h":
@@ -197,7 +256,7 @@ async def handle(message, ws):
         data = (destring(message[2:-1]))
         topic = data.get("topic")
         if data.get("authorized", None) == "ok":
-            log.info("authorized. getting_scoreboard")
+            log.write("authorized. getting_scoreboard")
             await subscribe_scoreboard(ws)
 
         # top-line scoreboard update
@@ -214,17 +273,17 @@ async def handle(message, ws):
                 if game_topic in sb.games:
                     continue
                 sb.games.add(game_topic)
-                log.info("subscribing to {}".format(game_topic))
+                log.write("subscribing to {}".format(game_topic))
                 await subscribe_to_game_topic(ws, game_topic)
 
         # per-game update
         elif topic in sb.games and data.get("body", False):
             parse_update(data)
         else:
-            log.debug("unimportant message")
+            log.write("unimportant message")
 
     else:
-        log.info(message)
+        log.write(message)
 
 
 async def try_map():
@@ -235,25 +294,15 @@ async def try_map():
                 message = await ws.recv()
                 await handle(message, ws)
     except (websockets.exceptions.InvalidStatusCode, websockets.exceptions.ConnectionClosedError) as e:
-        log.warning("Death was a websocket issue")
-        log.warning(e)
-
-
-async def start_table():
-    app = TableApp()
-    await app.run_async()
+        log.write("Death was a websocket issue")
+        log.write(e)
 
 
 async def main():
-    asyncio.create_task(try_map())
-    await start_table()
-
-
-def cycle():
-    sb = ScoreBoard()
-    while True:
-        sb.blink_map("nba", "LAL", 3)
-        time.sleep(5)
+    app = MApp()
+    await app.run_async()
+    # asyncio.create_task(try_map())
+    # await start_table()
 
 
 if __name__ == "__main__":
