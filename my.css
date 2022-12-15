@@ -1,10 +1,32 @@
 ScoreUpdate {
-  height: 8;
+  height: 35;
   width: 30%;
   content-align: center middle;
-  background: blue;
   color: white;
 }
+
+#nba {
+  background: olive;
+}
+
+#nfl {
+  background: crimson;
+}
+
+#mbl {
+  background: lavender;
+}
+
 Horizontal {
-    background: green;
+  height: auto;
+  background: green;
+  content-align: center middle;
+}
+
+MyTextLog {
+    height: auto;
+}
+
+Proxy{
+    background: purple;
 }
