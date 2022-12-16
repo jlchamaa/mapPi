@@ -39,6 +39,9 @@ class MApp(App):
     def on_proxy_logmessage(self, event):
         self.get_log().write(event.message)
 
+    def on_proxy_updatemessage(self, event):
+        self.query_one(f"#{event.league}").refresh()
+
     def get_proxy(self):
         return self.query_one(Proxy)
 
@@ -82,7 +85,7 @@ class ScoreUpdate(Widget):
     who = reactive({}, layout=True)
 
     def render(self) -> str:
-        return json.dumps(self.who, sort_keys=True, indent=2)
+        return json.dumps([self.id, self.who], sort_keys=True, indent=2)
 
     def change_who(self, new_who):
         self.who = new_who

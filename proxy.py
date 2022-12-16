@@ -30,6 +30,11 @@ async def subscribe_scoreboard(ws):
     await ws.send(tostring(req))
 
 
+async def unsubscribe_topic(ws, topic):
+    req = {"cmd": "unsubscribe", "topics": [topic]}
+    await ws.send(tostring(req))
+
+
 async def subscribe_to_game_topic(ws, game_topic):
     req = {"cmd": "subscribe", "topics": [game_topic]}
     await ws.send(tostring(req))
@@ -80,21 +85,28 @@ class ScoreBoard:
         old_score = scores.get(team, 0)
         scores[team] = new_score
         delta = new_score - old_score
-        if delta > 0 and delta < 10:
+        if delta > 0 and delta < 15:
             self.blink_map(league, team, new_score - old_score)
-            # log.write("({}) {} scores {} -> {}".format(league, team, old_score, new_score))
+        return "({}) {} scores {} -> {}".format(league, team, old_score, new_score)
 
 
 class Proxy(Static):
     sb = reactive(ScoreBoard())
+
+    class Updatemessage(Message):
+        def __init__(self, sender, league):
+            self.league = league
+            super().__init__(sender)
 
     class Logmessage(Message):
         def __init__(self, sender, message):
             self.message = message
             super().__init__(sender)
 
+    def render(self):
+        return "Proxy"
+
     async def logwrite(self, line):
-        self.styles.background = "green"
         await self.emit(self.Logmessage(self, line))
 
     def on_mount(self):
@@ -111,7 +123,9 @@ class Proxy(Static):
             for team_data in teams:
                 team_id = team_data["abbr"]
                 team_score = int(team_data["stats"]["points"])
-                self.sb.record_score("nba", team_id, team_score)
+                r = self.sb.record_score("nba", team_id, team_score)
+                await self.logwrite(r)
+                await self.emit(self.Updatemessage(self, "nba"))
         except Exception as e:
             traceback.print_exc()
             await self.logwrite(json.dumps(data, indent=2, sort_keys=True))
@@ -130,8 +144,11 @@ class Proxy(Static):
                     return
             else:
                 score_obj = data["body"][0]
-            self.sb.record_score("nfl", teams[0], int(score_obj["away_score"]))
-            self.sb.record_score("nfl", teams[1], int(score_obj["home_score"]))
+            r = self.sb.record_score("nfl", teams[0], int(score_obj["away_score"]))
+            await self.logwrite(r)
+            r = self.sb.record_score("nfl", teams[1], int(score_obj["home_score"]))
+            await self.logwrite(r)
+            await self.emit(self.Updatemessage(self, "nfl"))
         except Exception as e:
             await self.logwrite(json.dumps(data, indent=2, sort_keys=True))
             await self.logwrite("Problem in the NFL")
@@ -146,7 +163,9 @@ class Proxy(Static):
             for entry in data["body"]:
                 team_id = entry["abbr"]
                 score = int(entry["batting"]["runs"])
-                self.sb.record_score("mlb", team_id, score)
+                r = self.sb.record_score("mlb", team_id, score)
+                await self.logwrite(r)
+                await self.emit(self.Updatemessage(self, "mlb"))
         except Exception as e:
             await self.logwrite("Problem in the MLB")
             await self.logwrite(e)
@@ -173,11 +192,12 @@ class Proxy(Static):
 
         elif message[0] == "a":
             data = (destring(message[2:-1]))
-            topic = data.get("topic")
+            topic = data.get("topic", "")
+            if topic == "":
+                await self.logwrite(data)
             if data.get("authorized", None) == "ok":
                 await self.logwrite("authorized. getting_scoreboard")
                 await subscribe_scoreboard(ws)
-
             # top-line scoreboard update
             elif "scoreboard" in topic and data.get("eventType") == "setState":
                 league = topic[1:4]
@@ -194,12 +214,14 @@ class Proxy(Static):
                     self.sb.games.add(game_topic)
                     await self.logwrite("subscribing to {}".format(game_topic))
                     await subscribe_to_game_topic(ws, game_topic)
-
+            elif "scoreboard" in topic and data.get("eventType") != "setState":
+                await unsubscribe_topic(ws, topic)
+                await self.logwrite(f"Unsubscribed {topic}")
             # per-game update
             elif topic in self.sb.games and data.get("body", False):
                 await self.parse_update(data)
             else:
-                await self.logwrite("unimportant message")
+                await self.logwrite(topic)
 
         else:
             await self.logwrite(message)

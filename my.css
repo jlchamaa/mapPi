@@ -5,21 +5,13 @@ ScoreUpdate {
   color: white;
 }
 
-#nba {
-  background: olive;
-}
-
 #nfl {
-  background: crimson;
-}
-
-#mbl {
-  background: lavender;
+  background: maroon;
 }
 
 Horizontal {
   height: auto;
-  background: green;
+  background: black;
   content-align: center middle;
 }
 
@@ -28,5 +20,5 @@ MyTextLog {
 }
 
 Proxy{
-    background: purple;
+  content-align: center middle;
 }
