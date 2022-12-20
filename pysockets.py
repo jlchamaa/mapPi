@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import asyncio
 import json
+import logging
 import random
+from logging.handlers import TimedRotatingFileHandler
 from teams import teams
 from proxy import Proxy
 from datetime import datetime
@@ -12,7 +14,15 @@ from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import TextLog
 TZ = ZoneInfo("America/Los_Angeles")
-
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+    datefmt='%m-%d %H:%M',
+)
+h = TimedRotatingFileHandler("logs/out", when='midnight')
+log = logging.getLogger()
+log.addHandler(h)
+log.info("Help")
 
 class MApp(App):
     CSS_PATH = "my.css"
@@ -40,7 +50,7 @@ class MApp(App):
             ls[2],
             ls[3],
         )
-        yield MyTextLog()
+        yield TextLog()
 
     def on_proxy_logmessage(self, event):
         if not self.do_logging:
@@ -50,6 +60,7 @@ class MApp(App):
             m = f"{curt}  {event.message}"
         else:
             m = event.message
+        log.info(m)
         self.get_log().write(m)
 
     def on_proxy_updatemessage(self, event):
@@ -74,11 +85,6 @@ class MApp(App):
         #     for line in log.lines:
         #         f.write(str(line))
         self.do_logging = not self.do_logging
-
-
-class MyTextLog(TextLog):
-    def on_mount(self) -> None:
-        self.styles.height = 20
 
 
 class ScoreUpdate(Widget):

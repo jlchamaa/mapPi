@@ -189,58 +189,61 @@ class Proxy(Static):
         else:
             await self.logwrite(f"Can't pase update with topic {data['topic']}")
 
+
+    async def handle_by_topic(self, data, ws):
+        topic = data.get("topic", "")
+        if topic == "":
+            log.warn("No topic for this data")
+            log.warn(data)
+        elif topic.startswith("/nba/"):
+            await handle_nba(data, ws)
+        elif topic.startswith("/nfl/"):
+            await handle_nfl(data, ws)
+        elif topic.startswith("/mlb/"):
+            await handle_nfl(data, ws)
+        else:
+            await self.logwrite(data)
+        # elif "scoreboard" in topic and data.get("eventType") != "setState":
+        #     if "nfl" not in topic:
+        #         await unsubscribe_topic(ws, topic)
+        #         await self.logwrite(f"Unsubscribed {topic}")
+        # elif "scoreboard" in topic:
+        #     league = topic[1:4]
+        #     if "body" not in data:
+        #         await self.logwrite(f"bodyless data for {topic}")
+        #         await self.logwrite(data)
+        #         return
+        #     for game_info in data["body"]["games"]:
+        #         if "abbr" not in game_info:
+        #             await self.logwrite(f"We didn't have an abbr??")
+        #             await self.logwrite(topic)
+        #             continue
+        #         game_id = game_info["abbr"]
+        #         if league == "nfl":
+        #             game_topic = "/{}/gametracker/{}/scores".format(league, game_id)
+        #         if league == "nba":
+        #             game_topic = "/{}/gametracker/{}/ts".format(league, game_id)
+        #         if league == "mlb":
+        #             game_topic = "/{}/gametracker/{}/ts".format(league, game_id)
+        #         if game_topic in self.sb.games:
+        #             await self.emit(self.Updatemessage(self, "topics"))
+        #             continue
+        #         self.sb.games.add(game_topic)
+        #         await self.logwrite("subscribing to {}".format(game_topic))
+        #         await subscribe_to_game_topic(ws, game_topic)
+        # per-game update
+
     async def handle(self, message, ws):
         if message == "o":
             await self.logwrite("auth time")
             await auth(ws)
-
-        elif message == "h":
-            return
-
         elif message[0] == "a":
             data = (destring(message[2:-1]))
-            topic = data.get("topic", "")
-            if topic == "":
-                await self.logwrite(data)
             if data.get("authorized", None) == "ok":
-                await self.logwrite("authorized. getting_scoreboard")
+                await log.info("authorized. getting_scoreboard")
                 await subscribe_scoreboard(ws)
-            # top-line scoreboard update
-            elif "scoreboard" in topic and data.get("eventType") != "setState":
-                if "nfl" not in topic:
-                    await unsubscribe_topic(ws, topic)
-                    await self.logwrite(f"Unsubscribed {topic}")
-            elif "scoreboard" in topic:
-                league = topic[1:4]
-                if "body" not in data:
-                    await self.logwrite(f"bodyless data for {topic}")
-                    await self.logwrite(data)
-                    return
-                for game_info in data["body"]["games"]:
-                    if "abbr" not in game_info:
-                        await self.logwrite(f"We didn't have an abbr??")
-                        await self.logwrite(topic)
-                        continue
-                    game_id = game_info["abbr"]
-                    if league == "nfl":
-                        game_topic = "/{}/gametracker/{}/scores".format(league, game_id)
-                    if league == "nba":
-                        game_topic = "/{}/gametracker/{}/ts".format(league, game_id)
-                    if league == "mlb":
-                        game_topic = "/{}/gametracker/{}/ts".format(league, game_id)
-                    if game_topic in self.sb.games:
-                        await self.emit(self.Updatemessage(self, "topics"))
-                        continue
-                    self.sb.games.add(game_topic)
-                    await self.logwrite("subscribing to {}".format(game_topic))
-                    await subscribe_to_game_topic(ws, game_topic)
-            # per-game update
-            elif topic in self.sb.games and data.get("eventType") == "heartbeat":
-                pass
-            elif topic in self.sb.games and data.get("body", False):
-                await self.parse_update(data)
             else:
-                await self.logwrite(data)
+                await handle_by_topic(data, ws)
         else:
             await self.logwrite(message)
 
