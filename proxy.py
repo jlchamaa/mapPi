@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import asyncio
 import json
-# import serial
+import serial
 import traceback
 import re
 import websockets
@@ -10,7 +10,7 @@ from teams import teams, gamma
 from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import Static
-# ser = serial.Serial('/dev/ttyACM0', 38400)
+ser = serial.Serial('/dev/ttyACM0', 38400)
 
 
 def destring(obj):
@@ -78,7 +78,7 @@ class ScoreBoard:
             # ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
             ba[index] = min(255, value + 1)
         ba[8] = int(0)
-        # ser.write(ba)
+        ser.write(ba)
 
     def record_score(self, league, team, new_score):
         scores = getattr(self, league)
@@ -110,10 +110,17 @@ class Proxy(Static):
         await self.emit(self.Logmessage(self, line))
 
     def on_mount(self):
-        asyncio.create_task(self.try_map())
+        asyncio.create_task(self.map_loop())
+
+    async def map_loop(self):
+        while True:
+            self.sb.clear_games()
+            # TODO only clear if the date doesn't match today
+            try_again = await self.try_map()
+            await self.logwrite(f"Try Map finished and returned {try_again}")
+
 
     async def parse_nba_update(self, data):
-        await self.logwrite("NBA Update")
         try:
             eventType = data["eventType"]
             if eventType == "setState":
@@ -199,9 +206,21 @@ class Proxy(Static):
                 await self.logwrite("authorized. getting_scoreboard")
                 await subscribe_scoreboard(ws)
             # top-line scoreboard update
-            elif "scoreboard" in topic and data.get("eventType") == "setState":
+            elif "scoreboard" in topic and data.get("eventType") != "setState":
+                if "nfl" not in topic:
+                    await unsubscribe_topic(ws, topic)
+                    await self.logwrite(f"Unsubscribed {topic}")
+            elif "scoreboard" in topic:
                 league = topic[1:4]
+                if "body" not in data:
+                    await self.logwrite(f"bodyless data for {topic}")
+                    await self.logwrite(data)
+                    return
                 for game_info in data["body"]["games"]:
+                    if "abbr" not in game_info:
+                        await self.logwrite(f"We didn't have an abbr??")
+                        await self.logwrite(topic)
+                        continue
                     game_id = game_info["abbr"]
                     if league == "nfl":
                         game_topic = "/{}/gametracker/{}/scores".format(league, game_id)
@@ -210,19 +229,18 @@ class Proxy(Static):
                     if league == "mlb":
                         game_topic = "/{}/gametracker/{}/ts".format(league, game_id)
                     if game_topic in self.sb.games:
+                        await self.emit(self.Updatemessage(self, "topics"))
                         continue
                     self.sb.games.add(game_topic)
                     await self.logwrite("subscribing to {}".format(game_topic))
                     await subscribe_to_game_topic(ws, game_topic)
-            elif "scoreboard" in topic and data.get("eventType") != "setState":
-                await unsubscribe_topic(ws, topic)
-                await self.logwrite(f"Unsubscribed {topic}")
             # per-game update
+            elif topic in self.sb.games and data.get("eventType") == "heartbeat":
+                pass
             elif topic in self.sb.games and data.get("body", False):
                 await self.parse_update(data)
             else:
-                await self.logwrite(topic)
-
+                await self.logwrite(data)
         else:
             await self.logwrite(message)
 
@@ -233,6 +251,17 @@ class Proxy(Static):
                 while True:
                     message = await ws.recv()
                     await self.handle(message, ws)
-        except (websockets.exceptions.InvalidStatusCode, websockets.exceptions.ConnectionClosedError) as e:
-            await self.logwrite("Death was a websocket issue")
+        except (websockets.exceptions.ConnectionClosedOK) as e:
+            await self.logwrite("Closed for normal reasons")
             await self.logwrite(e)
+            return 0
+
+        except (websockets.exceptions.InvalidStatusCode, websockets.exceptions.ConnectionClosedError) as e:
+            await self.logwrite("Closed for BAD reasons")
+            await self.logwrite(e)
+            return 1
+        except BaseException as e:
+            await self.logwrite("Closed for other exception")
+            await self.logwrite(e)
+            return 1
+

@@ -1,12 +1,16 @@
 ScoreUpdate {
   height: 35;
-  width: 30%;
+  width: 25%;
   content-align: center middle;
   color: white;
+  background: crimson;
 }
 
+#topics {
+  background: purple;
+}
 #nfl {
-  background: maroon;
+  background: purple;
 }
 
 Horizontal {
