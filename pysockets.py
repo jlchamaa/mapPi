@@ -2,18 +2,15 @@
 import asyncio
 import json
 import logging
-import random
 from logging.handlers import TimedRotatingFileHandler
-from teams import teams
 from proxy import Proxy
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timezone, timedelta
 from textual.app import App
 from textual.containers import Horizontal
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import TextLog
-TZ = ZoneInfo("America/Los_Angeles")
+TZ = timezone(timedelta(hours=-8.0))
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
@@ -21,8 +18,10 @@ logging.basicConfig(
 )
 h = TimedRotatingFileHandler("logs/out", when='midnight')
 log = logging.getLogger()
+log.removeHandler(log.handlers[0])
 log.addHandler(h)
 log.info("Help")
+
 
 class MApp(App):
     CSS_PATH = "my.css"
@@ -42,7 +41,7 @@ class MApp(App):
             s.change_who(league_id)
             ls.append(s)
         s = ScoreUpdate(id="topics")
-        s.change_who(p.sb.games)
+        s.change_who(p.topics)
         ls.append(s)
         yield Horizontal(
             ls[0],

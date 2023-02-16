@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import asyncio
 import json
+import logging
 import serial
 import traceback
 import re
@@ -10,7 +11,9 @@ from teams import teams, gamma
 from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import Static
+log = logging.getLogger()
 ser = serial.Serial('/dev/ttyACM0', 38400)
+TOPICS = []
 
 
 def destring(obj):
@@ -27,16 +30,20 @@ def tostring(obj):
 
 async def subscribe_scoreboard(ws):
     req = {"cmd": "subscribe", "topics": ["/mlb/scoreboard", "/nfl/scoreboard", "/nba/scoreboard"]}
+    TOPICS.extend(req["topics"])
     await ws.send(tostring(req))
 
 
 async def unsubscribe_topic(ws, topic):
     req = {"cmd": "unsubscribe", "topics": [topic]}
+    if topic in TOPICS:
+        TOPICS.remove(topic)
     await ws.send(tostring(req))
 
 
 async def subscribe_to_game_topic(ws, game_topic):
     req = {"cmd": "subscribe", "topics": [game_topic]}
+    TOPICS.append(game_topic)
     await ws.send(tostring(req))
 
 
@@ -92,6 +99,7 @@ class ScoreBoard:
 
 class Proxy(Static):
     sb = reactive(ScoreBoard())
+    topics = reactive(TOPICS)
 
     class Updatemessage(Message):
         def __init__(self, sender, league):
@@ -113,31 +121,12 @@ class Proxy(Static):
         asyncio.create_task(self.map_loop())
 
     async def map_loop(self):
-        while True:
-            self.sb.clear_games()
-            # TODO only clear if the date doesn't match today
-            try_again = await self.try_map()
-            await self.logwrite(f"Try Map finished and returned {try_again}")
+        # while True:
+        self.sb.clear_games()
+        # TODO only clear if the date doesn't match today
+        try_again = await self.try_map()
+        await self.logwrite(f"Try Map finished and returned {try_again}")
 
-
-    async def parse_nba_update(self, data):
-        try:
-            eventType = data["eventType"]
-            if eventType == "setState":
-                teams = data["body"]["ts"]
-            elif eventType == "update":
-                teams = data["body"]
-            for team_data in teams:
-                team_id = team_data["abbr"]
-                team_score = int(team_data["stats"]["points"])
-                r = self.sb.record_score("nba", team_id, team_score)
-                await self.logwrite(r)
-                await self.emit(self.Updatemessage(self, "nba"))
-        except Exception as e:
-            traceback.print_exc()
-            await self.logwrite(json.dumps(data, indent=2, sort_keys=True))
-            await self.logwrite("Problem in the NBA")
-            await self.logwrite(e)
 
     async def parse_nfl_update(self, data):
         await self.logwrite("NFL Update")
@@ -178,31 +167,63 @@ class Proxy(Static):
             await self.logwrite(e)
             await self.logwrite(json.dumps(data, indent=2))
 
-    async def parse_update(self, data):
-        league = data["topic"][1:4]
-        if league == "nba":
-            await self.parse_nba_update(data)
-        elif league == "nfl":
-            await self.parse_nfl_update(data)
-        elif league == "mlb":
-            await self.parse_mlb_update(data)
-        else:
-            await self.logwrite(f"Can't pase update with topic {data['topic']}")
-
-
-    async def handle_by_topic(self, data, ws):
+    async def handle_nba(self, data, ws):
         topic = data.get("topic", "")
-        if topic == "":
-            log.warn("No topic for this data")
-            log.warn(data)
-        elif topic.startswith("/nba/"):
-            await handle_nba(data, ws)
-        elif topic.startswith("/nfl/"):
-            await handle_nfl(data, ws)
-        elif topic.startswith("/mlb/"):
-            await handle_nfl(data, ws)
+        event_type = data.get("eventType", "")
+        await self.logwrite(f"Nba: {topic}: {event_type}")
+        if "scoreboard" in topic:
+            # populate scoreboard
+            if event_type == "setState":
+                await self.logwrite("nba 1")
+                league = topic[1:4]
+                if "body" not in data:
+                    await self.logwrite(f"bodyless data for {topic}")
+                    await self.logwrite(data)
+                    return
+                for game_info in data["body"]["games"]:
+                    if "abbr" not in game_info:
+                        await self.logwrite("We didn't have an abbr??")
+                        await self.logwrite(topic)
+                        continue
+                    game_id = game_info["abbr"]
+                    game_topic = "/{}/gametracker/{}/ts".format(league, game_id)
+                    if game_topic in self.sb.games:
+                        await self.emit(self.Updatemessage(self, "topics"))
+                        continue
+                    self.sb.games.add(game_topic)
+                    await self.logwrite("subscribing to {}".format(game_topic))
+                    await subscribe_to_game_topic(ws, game_topic)
+            else:
+                # we got the scoreboard, so get out
+                await self.logwrite("nba 2")
+                await unsubscribe_topic(ws, topic)
+                await self.logwrite(f"Unsubscribed {topic}")
+        elif "gametracker" in topic:
+            await self.logwrite("nba 3")
+            try:
+                if event_type == "":
+                    await self.logwrite("nba 5")
+                    return
+                if event_type == "setState":
+                    teams = data["body"]["ts"]
+                elif event_type == "update":
+                    teams = data["body"]
+                for team_data in teams:
+                    team_id = team_data["abbr"]
+                    team_score = int(team_data["stats"]["points"])
+                    r = self.sb.record_score("nba", team_id, team_score)
+                    await self.logwrite(r)
+                    await self.emit(self.Updatemessage(self, "nba"))
+            except Exception as e:
+                await self.logwrite("Problem in the NBA")
+                await self.logwrite(traceback.format_exc())
+                await self.logwrite(json.dumps(data, indent=2, sort_keys=True))
+                await self.logwrite(e)
         else:
+            await self.logwrite("nba 4")
             await self.logwrite(data)
+
+    async def handle_nfl(self, data, ws):
         # elif "scoreboard" in topic and data.get("eventType") != "setState":
         #     if "nfl" not in topic:
         #         await unsubscribe_topic(ws, topic)
@@ -232,6 +253,56 @@ class Proxy(Static):
         #         await self.logwrite("subscribing to {}".format(game_topic))
         #         await subscribe_to_game_topic(ws, game_topic)
         # per-game update
+        pass
+
+    async def handle_mlb(self, data, ws):
+        # elif "scoreboard" in topic and data.get("eventType") != "setState":
+        #     if "nfl" not in topic:
+        #         await unsubscribe_topic(ws, topic)
+        #         await self.logwrite(f"Unsubscribed {topic}")
+        # elif "scoreboard" in topic:
+        #     league = topic[1:4]
+        #     if "body" not in data:
+        #         await self.logwrite(f"bodyless data for {topic}")
+        #         await self.logwrite(data)
+        #         return
+        #     for game_info in data["body"]["games"]:
+        #         if "abbr" not in game_info:
+        #             await self.logwrite(f"We didn't have an abbr??")
+        #             await self.logwrite(topic)
+        #             continue
+        #         game_id = game_info["abbr"]
+        #         if league == "nfl":
+        #             game_topic = "/{}/gametracker/{}/scores".format(league, game_id)
+        #         if league == "nba":
+        #             game_topic = "/{}/gametracker/{}/ts".format(league, game_id)
+        #         if league == "mlb":
+        #             game_topic = "/{}/gametracker/{}/ts".format(league, game_id)
+        #         if game_topic in self.sb.games:
+        #             await self.emit(self.Updatemessage(self, "topics"))
+        #             continue
+        #         self.sb.games.add(game_topic)
+        #         await self.logwrite("subscribing to {}".format(game_topic))
+        #         await subscribe_to_game_topic(ws, game_topic)
+        # per-game update
+        pass
+
+    async def handle_by_topic(self, data, ws):
+        topic = data.get("topic", "")
+        if topic == "":
+            log.warn("No topic for this data")
+            log.warn(data)
+        elif topic.startswith("/nba/"):
+            log.debug("nba")
+            await self.handle_nba(data, ws)
+        elif topic.startswith("/nfl/"):
+            log.debug("nfl")
+            await self.handle_nfl(data, ws)
+        elif topic.startswith("/mlb/"):
+            log.debug("mlb")
+            await self.handle_nfl(data, ws)
+        else:
+            await self.logwrite(data)
 
     async def handle(self, message, ws):
         if message == "o":
@@ -240,10 +311,10 @@ class Proxy(Static):
         elif message[0] == "a":
             data = (destring(message[2:-1]))
             if data.get("authorized", None) == "ok":
-                await log.info("authorized. getting_scoreboard")
+                log.info("authorized. getting_scoreboard")
                 await subscribe_scoreboard(ws)
             else:
-                await handle_by_topic(data, ws)
+                await self.handle_by_topic(data, ws)
         else:
             await self.logwrite(message)
 
@@ -266,5 +337,5 @@ class Proxy(Static):
         except BaseException as e:
             await self.logwrite("Closed for other exception")
             await self.logwrite(e)
+            await self.logwrite(traceback.format_exc())
             return 1
-

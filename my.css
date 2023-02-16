@@ -19,8 +19,8 @@ Horizontal {
   content-align: center middle;
 }
 
-MyTextLog {
-    height: auto;
+TextLog {
+    height: 20;
 }
 
 Proxy{
