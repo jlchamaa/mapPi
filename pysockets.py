@@ -11,16 +11,15 @@ from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import TextLog
 TZ = timezone(timedelta(hours=-8.0))
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-    datefmt='%m-%d %H:%M',
-)
-h = TimedRotatingFileHandler("logs/out", when='midnight')
-log = logging.getLogger()
-log.removeHandler(log.handlers[0])
+h = TimedRotatingFileHandler("logs/out", when='H')
+h.setFormatter(logging.Formatter(
+    '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+))
+log = logging.getLogger("mappy")
+log.setLevel(logging.INFO)
 log.addHandler(h)
 log.info("Help")
+log.info(log.handlers)
 
 
 class MApp(App):
@@ -79,10 +78,6 @@ class MApp(App):
         self.exit()
 
     def action_enable_log(self):
-        # log = self.get_log()
-        # with open("out.log", "w") as f:
-        #     for line in log.lines:
-        #         f.write(str(line))
         self.do_logging = not self.do_logging
 
 
@@ -101,8 +96,6 @@ class ScoreUpdate(Widget):
 async def main():
     app = MApp()
     await app.run_async()
-    # asyncio.create_task(try_map())
-    # await start_table()
 
 
 if __name__ == "__main__":
