@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="static/my.js"></script>
+    </head>
+    <body>
+      <div class="d-flex gap-2 justify-content-center py-5">
+        <button onclick="refresh()" class="btn btn-primary rounded-pill px-3" type="button">Primary</button>
+      </div>
+      <div class="container">
+      <div class="row mb-3 text-center">
+        <div id="nfl" class="col-4 themed-grid-col">
+          <h2>NFL</h2>
+          {% for team, score in g.nfl.items() %}
+          <div class="row justify-content-center">
+              <h3 id="nfl.{{ team }}">{{ team }}: {{ score }}</h3>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div id="mlb" class="col-4 themed-grid-col">
+          <h2>MLB</h2>
+          {% for team, score in g.mlb.items() %}
+          <div class="row justify-content-center">
+              <h3 id="mlb.{{ team }}">{{ team }}: {{ score }}</h3>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div id="nba" class="col-4 themed-grid-col">
+          <h2>NBA</h2>
+          {% for team, score in g.nba.items() %}
+          <div class="row justify-content-center">
+              <h3 id="nba.{{ team }}">{{ team }}: {{ score }}</h3>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      </div>
+    </body>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+<script>
+</script>
+
+</html>

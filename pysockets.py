@@ -98,6 +98,10 @@ async def main():
     await app.run_async()
 
 
-if __name__ == "__main__":
-    # cycle()
+def run():
     asyncio.run(main())
+
+
+if __name__ == "__main__":
+    run()
+    # cycle()
