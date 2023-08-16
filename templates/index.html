@@ -13,27 +13,27 @@
       <div class="row mb-3 text-center">
         <div id="nfl" class="col-4 themed-grid-col">
           <h2>NFL</h2>
-          {% for team, score in g.nfl.items() %}
+          {% for team, score in g.sb["nfl"].items() %}
           <div class="row justify-content-center">
-              <h6 id="nfl.{{ team }}">{{ team }}: {{ score }}</h6>
+              <h6 style="background: 'white'" id="nfl.{{ team }}">{{ team }}: {{ score }}</h6>
           </div>
           {% endfor %}
         </div>
 
         <div id="mlb" class="col-4 themed-grid-col">
           <h2>MLB</h2>
-          {% for team, score in g.mlb.items() %}
+          {% for team, score in g.sb["mlb"].items() %}
           <div class="row justify-content-center">
-              <h6 id="mlb.{{ team }}">{{ team }}: {{ score }}</h6>
+              <h6 style="background: 'white'" id="mlb.{{ team }}">{{ team }}: {{ score }}</h6>
           </div>
           {% endfor %}
         </div>
 
         <div id="nba" class="col-4 themed-grid-col">
           <h2>NBA</h2>
-          {% for team, score in g.nba.items() %}
+          {% for team, score in g.sb["nba"].items() %}
           <div class="row justify-content-center">
-              <h6 id="nba.{{ team }}">{{ team }}: {{ score }}</h6>
+              <h6 style="background: 'white'" id="nba.{{ team }}">{{ team }}: {{ score }}</h6>
           </div>
           {% endfor %}
         </div>
