@@ -1,38 +1,22 @@
 from multiprocessing import Process, Queue
 from flask import Flask, render_template, g, request
+from teams import teams
 import pysockets as pys
 app = Flask(__name__)
 q = Queue()
 p = Process(target=pys.run, args=(q,))
 p.start()
-sb = {
-    "nba": {
-        "SEA": 1,
-        "DEN": 2,
-        "PIT": 3,
-    },
-    "mlb": {
-        "SEA": 1,
-        "DEN": 2,
-        "PIT": 3,
-    },
-    "nfl": {
-        "SEA": 1,
-        "DEN": 2,
-        "PIT": 3,
-    }
-}
 
 @app.route('/')
 def index():
-    g.nba = sb["nba"]
-    g.nfl = sb["nfl"]
-    g.mlb = sb["mlb"]
+    g.nba = {team: 0 for team in teams["nba"]}
+    g.nfl = {team: 0 for team in teams["nfl"]}
+    g.mlb = {team: 0 for team in teams["mlb"]}
     return render_template('index.html')
 
 @app.route('/scoreboard')
 def scoreboard():
-    return '{"nba": {"SEA": 8}}'
+    return '{"nba": {"BOS": 8}}'
 
 
 portno=None

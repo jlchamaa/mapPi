@@ -15,7 +15,7 @@
           <h2>NFL</h2>
           {% for team, score in g.nfl.items() %}
           <div class="row justify-content-center">
-              <h3 id="nfl.{{ team }}">{{ team }}: {{ score }}</h3>
+              <h6 id="nfl.{{ team }}">{{ team }}: {{ score }}</h6>
           </div>
           {% endfor %}
         </div>
@@ -24,7 +24,7 @@
           <h2>MLB</h2>
           {% for team, score in g.mlb.items() %}
           <div class="row justify-content-center">
-              <h3 id="mlb.{{ team }}">{{ team }}: {{ score }}</h3>
+              <h6 id="mlb.{{ team }}">{{ team }}: {{ score }}</h6>
           </div>
           {% endfor %}
         </div>
@@ -33,7 +33,7 @@
           <h2>NBA</h2>
           {% for team, score in g.nba.items() %}
           <div class="row justify-content-center">
-              <h3 id="nba.{{ team }}">{{ team }}: {{ score }}</h3>
+              <h6 id="nba.{{ team }}">{{ team }}: {{ score }}</h6>
           </div>
           {% endfor %}
         </div>
