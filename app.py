@@ -1,14 +1,16 @@
 import json
 import pysockets as pys
 import random
+import asyncio
+from multiprocessing import Process
 from flask import Flask, render_template, g, request
-from multiprocessing import Process, Queue
 from teams import teams
 app = Flask(__name__)
-q = Queue()
-p = Process(target=pys.run, args=(q,))
-p.start()
 SB = {}
+
+p = Process(target=pys.run)
+p.start()
+
 
 def gen_update(start=False):
     val = 0 if start else None
@@ -23,13 +25,18 @@ def index():
     global SB 
     SB = gen_update(start=True)
     g.sb = SB
+    g.topics = ["topic1"]
     return render_template('index.html')
 
-@app.route('/scoreboard')
-def scoreboard():
+@app.route('/new_scores')
+def scores():
+    # new_sb = gen_update()
+    # return gen_update()
+    return random_score()
+
+def random_score():
     global SB
     sb = SB
-    print(sb)
     league = random.choice(list(sb))
     team = random.choice(list(sb[league]))
     score = sb[league][team] 

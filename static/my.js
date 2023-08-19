@@ -2,7 +2,7 @@ console.log("help me");
 
 async function refresh() {
     console.log("Called refresh");
-    const response = await fetch("/scoreboard");
+    const response = await fetch("/new_scores");
     const data = await response.json();
     const nba = data.nba;
     for (team in nba){

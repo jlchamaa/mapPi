@@ -9,9 +9,6 @@ import re
 import websockets
 from teams import teams, gamma
 
-from textual.message import Message
-from textual.reactive import reactive
-from textual.widgets import Static
 log = logging.getLogger("mappy")
 ser = serial.Serial('/dev/ttyACM0', 38400)
 TOPICS = []
@@ -102,40 +99,25 @@ class ScoreBoard:
         return "({}) {} scores {} -> {}".format(league, team, old_score, new_score)
 
 
-class Proxy(Static):
-    sb = reactive(ScoreBoard())
-    topics = reactive(TOPICS)
+class Proxy():
+    def __init__(self):
+        self.sb = ScoreBoard()
+        self.topics = TOPICS
 
-    class Updatemessage(Message):
-        def __init__(self, sender, league):
-            self.league = league
-            super().__init__(sender)
-
-    class Logmessage(Message):
-        def __init__(self, sender, message):
-            self.message = message
-            super().__init__(sender)
-
-    def render(self):
-        return "Proxy"
-
-    async def logwrite(self, line, data=False):
+    def logwrite(self, line, data=False):
         if not data:
             log.info(line)
-            await self.emit(self.Logmessage(self, line))
+            # await self.emit(self.Logmessage(self, line))
         else:
             log.info(line)
 
-    def on_mount(self):
-        asyncio.create_task(self.map_loop())
-
-    async def map_loop(self):
+    def map_loop(self):
         try_again = True
         while try_again:
-            await self.logwrite(f"Trying Map Loop")
+            self.logwrite(f"Trying Map Loop")
             self.sb.clear_games()
-            try_again = await self.try_map()
-            await self.logwrite(f"Try Map finished and returned {try_again}")
+            try_again = self.try_map()
+            self.logwrite(f"Try Map finished and returned {try_again}")
 
 
     async def handle_nba(self, data, ws):
@@ -146,26 +128,26 @@ class Proxy(Static):
             if event_type == "setState":
                 league = topic[1:4]
                 if "body" not in data:
-                    await self.logwrite(f"bodyless data for {topic}")
-                    await self.logwrite(data)
+                    self.logwrite(f"bodyless data for {topic}")
+                    self.logwrite(data)
                     return
                 for game_info in data["body"]["games"]:
                     if "abbr" not in game_info:
-                        await self.logwrite("We didn't have an abbr??")
-                        await self.logwrite(topic)
+                        self.logwrite("We didn't have an abbr??")
+                        self.logwrite(topic)
                         continue
                     game_id = game_info["abbr"]
                     game_topic = "/{}/gametracker/{}/ts".format(league, game_id)
                     if game_topic in self.sb.games:
-                        await self.emit(self.Updatemessage(self, "topics"))
+                        # await self.emit(self.Updatemessage(self, "topics"))
                         continue
                     self.sb.games.add(game_topic)
-                    await self.logwrite("subscribing to {}".format(game_topic))
+                    self.logwrite("subscribing to {}".format(game_topic))
                     await subscribe_to_game_topic(ws, game_topic)
             else:
                 # we got the scoreboard, so get out
                 await unsubscribe_topic(ws, topic)
-                await self.logwrite(f"Unsubscribed {topic}")
+                self.logwrite(f"Unsubscribed {topic}")
         elif "gametracker" in topic:
             try:
                 if event_type == "":
@@ -175,22 +157,22 @@ class Proxy(Static):
                 elif event_type == "update":
                     teams = data["body"]
                 else:
-                    await self.logwrite(event_type)
+                    self.logwrite(event_type)
                     return
                 for team_data in teams:
                     team_id = team_data["abbr"]
                     team_score = int(team_data["stats"]["points"])
                     r = self.sb.record_score("nba", team_id, team_score)
-                    await self.logwrite(r)
-                    await self.emit(self.Updatemessage(self, "nba"))
+                    self.logwrite(r)
+                    # await self.emit(self.Updatemessage(self, "nba"))
             except Exception as e:
-                await self.logwrite("Problem in the NBA")
-                await self.logwrite(traceback.format_exc())
-                await self.logwrite(json.dumps(data, indent=2, sort_keys=True))
-                await self.logwrite(e)
+                self.logwrite("Problem in the NBA")
+                self.logwrite(traceback.format_exc())
+                self.logwrite(json.dumps(data, indent=2, sort_keys=True))
+                self.logwrite(e)
         else:
-            await self.logwrite("nba 4")
-            await self.logwrite(data)
+            self.logwrite("nba 4")
+            self.logwrite(data)
 
     async def handle_nfl(self, data, ws):
         return
@@ -206,14 +188,14 @@ class Proxy(Static):
             else:
                 score_obj = data["body"][0]
             r = self.sb.record_score("nfl", teams[0], int(score_obj["away_score"]))
-            await self.logwrite(r)
+            self.logwrite(r)
             r = self.sb.record_score("nfl", teams[1], int(score_obj["home_score"]))
-            await self.logwrite(r)
-            await self.emit(self.Updatemessage(self, "nfl"))
+            self.logwrite(r)
+            # await self.emit(self.Updatemessage(self, "nfl"))
         except Exception as e:
-            await self.logwrite(json.dumps(data, indent=2, sort_keys=True))
-            await self.logwrite("Problem in the NFL")
-            await self.logwrite(e)
+            self.logwrite(json.dumps(data, indent=2, sort_keys=True))
+            self.logwrite("Problem in the NFL")
+            self.logwrite(e)
 
     async def handle_mlb(self, data, ws):
         return
@@ -226,11 +208,11 @@ class Proxy(Static):
                 score = int(entry["batting"]["runs"])
                 r = self.sb.record_score("mlb", team_id, score)
                 await self.logwrite(r)
-                await self.emit(self.Updatemessage(self, "mlb"))
+                # await self.emit(self.Updatemessage(self, "mlb"))
         except Exception as e:
-            await self.logwrite("Problem in the MLB")
-            await self.logwrite(e)
-            await self.logwrite(json.dumps(data, indent=2))
+            self.logwrite("Problem in the MLB")
+            self.logwrite(e)
+            self.logwrite(json.dumps(data, indent=2))
 
     async def handle_by_topic(self, data, ws):
         topic = data.get("topic", "")
@@ -247,23 +229,27 @@ class Proxy(Static):
             log.debug("mlb")
             await self.handle_mlb(data, ws)
         else:
-            await self.logwrite(data)
+            self.logwrite(data)
 
     async def handle(self, message, ws):
-        if message == "o":
-            await self.logwrite("auth time")
-            await auth(ws)
-        elif message[0] == "a":
-            data = (destring(message[2:-1]))
-            if data.get("authorized", None) == "ok":
-                log.info("authorized. getting_scoreboard")
-                await subscribe_scoreboard(ws)
-            else:
-                await self.handle_by_topic(data, ws)
-        else:
-            await self.logwrite(message)
+        log.info("Handling something")
+        log.info(message)
+        return
+        # if message == "o":
+        #     self.logwrite("auth time")
+        #     await auth(ws)
+        # elif message[0] == "a":
+        #     data = (destring(message[2:-1]))
+        #     if data.get("authorized", None) == "ok":
+        #         log.info("authorized. getting_scoreboard")
+        #         await subscribe_scoreboard(ws)
+        #     else:
+        #         await self.handle_by_topic(data, ws)
+        # else:
+        #     self.logwrite(message)
 
     async def try_map(self):
+        log.info("Trying map")
         uri = "wss://torq.cbssports.com/torq/handler/117/7v5ku21t/websocket"
         try:
             async with websockets.connect(uri, ssl=True) as ws:
@@ -271,16 +257,16 @@ class Proxy(Static):
                     message = await ws.recv()
                     await self.handle(message, ws)
         except (websockets.exceptions.ConnectionClosedOK) as e:
-            await self.logwrite("Closed for normal reasons")
-            await self.logwrite(e)
+            self.logwrite("Closed for normal reasons")
+            self.logwrite(e)
             return True
 
         except (websockets.exceptions.InvalidStatusCode, websockets.exceptions.ConnectionClosedError) as e:
-            await self.logwrite("Closed for BAD reasons")
-            await self.logwrite(e)
+            self.logwrite("Closed for BAD reasons")
+            self.logwrite(e)
             return False
         except (KeyboardInterrupt, BaseException) as e:
-            await self.logwrite("Closed for other exception")
-            await self.logwrite(e)
-            await self.logwrite(traceback.format_exc())
+            self.logwrite("Closed for other exception")
+            self.logwrite(e)
+            self.logwrite(traceback.format_exc())
             return False

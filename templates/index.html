@@ -11,6 +11,11 @@
       </div>
       <div class="container">
       <div class="row mb-3 text-center">
+        {% for topic in g.topics %}
+        <h4>{{ topic }}</h4>
+        {% endfor %}
+      </div>
+      <div class="row mb-3 text-center">
         <div id="nfl" class="col-4 themed-grid-col">
           <h2>NFL</h2>
           {% for team, score in g.sb["nfl"].items() %}
