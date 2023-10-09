@@ -2,13 +2,14 @@ import json
 from pysockets import run as pys_run
 import random
 import asyncio
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from flask import Flask, render_template, g, request
 from teams import teams
 app = Flask(__name__)
 SB = {}
-
-p = Process(target=pys_run)
+score_q = Queue()
+log_q = Queue()
+p = Process(target=pys_run, args=(score_q, log_q))
 p.start()
 
 
@@ -30,8 +31,11 @@ def index():
     return render_template('index.html')
 
 @app.route('/new_lines')
-def lines():
-    return {"help": "me"}
+def new_lines():
+    lines = []
+    while not log_q.empty():
+        lines.append(log_q.get())
+    return lines
 
 
 @app.route('/new_scores')

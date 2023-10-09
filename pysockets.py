@@ -6,13 +6,7 @@ import websockets
 import traceback
 from logging.handlers import TimedRotatingFileHandler
 from handlers.scoreboard import Scoreboard
-from handlers import (
-    AuthHandler,
-    BaseHandler,
-    NBAHandler,
-    NFLHandler,
-    MLBHandler,
-)
+from handlers import all_handlers
 h = TimedRotatingFileHandler("logs/out", when='H')
 h.setFormatter(logging.Formatter(
     '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
@@ -23,22 +17,56 @@ log.addHandler(h)
 log.info("Help")
 
 
-def run():
-    my_map = Map()
+def run(score_q, log_q):
+    my_map = Map(score_q, log_q)
     asyncio.run(my_map.try_map())
 
 
-class Map():
-    def __init__(self):
-        self.sb = Scoreboard()
-        self.handlers = self.build_handler()
+def destring(obj):
+    obj = obj[2:-1]
+    obj = json.loads(obj)
+    obj = json.loads(obj)
+    return obj
 
-    def build_handler(self):
-        return [BaseHandler(), AuthHandler()]
+
+def tostring(obj):
+    for _ in range(2):
+        obj = json.dumps(obj)
+    return obj
+
+
+class Map():
+    def __init__(self, score_q, log_q):
+        self.score_q = score_q
+        self.log_q = log_q
+        self.sb = Scoreboard()
+        self.handlers = self.build_handler(
+            self.score_q,
+            self.log_q,
+        )
+
+    def build_handler(self, sc, lo):
+        return [h(sc, lo) for h in all_handlers]
+
+    @staticmethod
+    def transform(msg):
+        if len(msg) < 4:
+            if msg == "o":
+                return {"auth": "ready"}
+            else:
+                log.error("Weird short message")
+                log.error(msg)
+        try:
+            return destring(msg)
+        except:
+            log.error("Un-de-stringable massage")
+            log.error(msg)
+            raise
 
     async def attempt_all(self, msg, ws):
+        obj = self.transform(msg)
         for h in self.handlers:
-            await h.attempt(msg, ws)
+            await h.attempt(obj, ws)
 
     def logwrite(self, line, data=False):
         if not data:

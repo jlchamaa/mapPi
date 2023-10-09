@@ -4,6 +4,7 @@ async function new_lines() {
     console.log("Called new_lines");
     const response = await fetch("/new_lines");
     const data = await response.json();
+    for (obj of data){console.log(obj);}
 }
 
 async function new_scores() {
@@ -36,5 +37,5 @@ function update(league, team, score) {
     }
 }
 
-// const the_timer = setInterval(new_lines, 5000)
+const the_timer = setInterval(new_lines, 5000)
 // const the_timer_2 = setInterval(new_scores, 5000)
