@@ -3,11 +3,14 @@ from handlers.base import Handler
 log = logging.getLogger("mappy")
 
 
-class NBAHandler(Handler):
-    def is_relevant(self, message):
-        return True
+class NBAScoreboard(Handler):
+    def is_relevant(self, obj):
+        return (
+            obj.get("topic") == "/nba/scoreboard"
+            and obj.get("eventType") in ["update", "setState"]
+        )
 
-    def handle(self, message, ws):
+    async def handle(self, obj, ws):
         log.info("NBA handle")
         
 
