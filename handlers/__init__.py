@@ -1,5 +1,5 @@
 from .base import Base, Auth, ScoreboardSubscription
-from .nba import NBAScoreboard
+from .nba import NBAScoreboard, NBAScore
 from .mlb import MLBScoreboard
 from .nfl import NFLScoreboard, NFLScore
 
@@ -7,9 +7,9 @@ all_handlers = [
     Base,
     Auth,
     ScoreboardSubscription,
-    NFLScoreboard,
+    # NFLScoreboard,
     MLBScoreboard,
-    NBAScoreboard,
+    NBAScoreboard, NBAScore
     # NBA,
     # NFL,
     # MLB

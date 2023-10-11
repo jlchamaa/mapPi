@@ -1,9 +1,9 @@
 import logging
-from handlers.base import Handler
+from handlers.base import League, Score
 log = logging.getLogger("mappy")
 
 
-class NFLScoreboard(Handler):
+class NFLScoreboard(League):
     def is_relevant(self, obj):
         return (
             obj.get("topic") == "/nfl/scoreboard"
@@ -17,7 +17,12 @@ class NFLScoreboard(Handler):
             abbr =game.get("abbr")
             log.info(abbr)
             log.info("needa subscribe tho")
-            self.log_q({"msg": abbr})
+            if abbr not in self.topics: 
+                self.log_q.put({"msg": f"We need: {abbr}"})
+                self.topics.append(abbr)
+            else:
+                self.log_q.put({"msg": f"We don't need: {abbr}"})
+
 
         
     def handle_nfl(self, data):
@@ -43,7 +48,7 @@ class NFLScoreboard(Handler):
             self.logwrite(e)
 
 
-class NFLScore(Handler):
+class NFLScore(Score):
     def is_relevant(self, obj):
         topic = obj.get("topic")
         return topic.startswith("/nfl/") and "@" in topic

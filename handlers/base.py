@@ -1,9 +1,11 @@
 import abc
 import json
 import logging
+import serial
+import traceback
+from teams import teams, gamma
 log = logging.getLogger("mappy")
-TOPICS = []
-
+USB = serial.Serial('/dev/ttyACM0', 38400)
 
 def tostring(obj):
     for _ in range(2):
@@ -15,10 +17,21 @@ class Handler(abc.ABC):
     def __init__(self, score_q, log_q):
         self.score_q = score_q
         self.log_q = log_q
+        self.extra_init()
+
+    def extra_init(self):
+        pass
 
     async def attempt(self, obj, ws):
-        if self.is_relevant(obj):
-            await self.handle(obj, ws)
+        try:
+            if self.is_relevant(obj):
+                await self.handle(obj, ws)
+        except BaseException as e:
+            if not (isinstance(obj, dict) or isinstance(obj, list)):
+                obj = str(obj)
+            traceback.print_exc()
+            log.info(type(obj))
+            log.info(str(obj))
 
 
     @abc.abstractmethod
@@ -32,10 +45,9 @@ class Handler(abc.ABC):
 
 class Base(Handler):
     def is_relevant(self, obj):
-        return True
+        return False
 
     async def handle(self, obj, ws):
-        log.info(f"msg of length {len(str(obj))}")
         self.log_q.put(obj)
 
 
@@ -63,19 +75,53 @@ class ScoreboardSubscription(Handler):
                 "/nfl/scoreboard",
                 "/nba/scoreboard",
         ]}
-        TOPICS.extend(req["topics"])
+        await ws.send(tostring(req))
+
+class League(Handler):
+    def extra_init(self):
+        self.topics = []
+
+    async def subscribe_topic(self, ws, topic):
+        req = {"cmd": "subscribe", "topics": [topic]}
         await ws.send(tostring(req))
 
 
-
-async def unsubscribe_topic(ws, topic):
-    req = {"cmd": "unsubscribe", "topics": [topic]}
-    if topic in TOPICS:
-        TOPICS.remove(topic)
-    await ws.send(tostring(req))
+    async def unsubscribe_topic(self, ws, topic):
+        req = {"cmd": "unsubscribe", "topics": [topic]}
+        await ws.send(tostring(req))
 
 
-async def subscribe_to_game_topic(ws, game_topic):
-    req = {"cmd": "subscribe", "topics": [game_topic]}
-    TOPICS.append(game_topic)
-    await ws.send(tostring(req))
+class Score(Handler):
+    def extra_init(self):
+        self.scoreboard = {}
+
+    def record_score(self, league, team, new_score):
+        delta = new_score - self.scoreboard.get(team, 0)
+        delta = min(10, max(0, delta))  # at least 0 no more than 10
+        self.scoreboard[team] = new_score
+        self.blink_score(league, team, delta)
+
+    def blink_score(self, league, team, delta):
+        points = int(delta)
+        cityNum = int(teams[league][team]['lednum'])
+        temp = teams[league][team]['color1']
+        col1r = int(temp[1:3], 16)
+        col1g = int(temp[3:5], 16)
+        col1b = int(temp[5:7], 16)
+        temp = teams[league][team]['color2']
+        col2r = int(temp[1:3], 16)
+        col2g = int(temp[3:5], 16)
+        col2b = int(temp[5:7], 16)
+        ba = bytearray()
+        ba[0:8] = [
+            cityNum,
+            points,
+            gamma[col1r], gamma[col1g], gamma[col1b],
+            gamma[col2r], gamma[col2g], gamma[col2b],
+            0,  # trailing zero needed for Arduino
+        ]
+        for index, value in enumerate(ba):
+            # ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
+            ba[index] = min(255, value + 1)
+        ba[8] = int(0)
+        USB.write(ba)
