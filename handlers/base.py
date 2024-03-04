@@ -1,4 +1,4 @@
-import abc
+from abc import ABC, abstractmethod
 import json
 import logging
 import serial
@@ -13,7 +13,7 @@ def tostring(obj):
     return obj
 
 
-class Handler(abc.ABC):
+class Handler(ABC):
     def __init__(self, score_q, log_q):
         self.score_q = score_q
         self.log_q = log_q
@@ -34,11 +34,11 @@ class Handler(abc.ABC):
             log.info(str(obj))
 
 
-    @abc.abstractmethod
+    @abstractmethod
     def is_relevant(self, obj):
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     async def handle(self, obj, ws):
         raise NotImplementedError
 
@@ -75,19 +75,55 @@ class ScoreboardSubscription(Handler):
                 "/nfl/scoreboard",
                 "/nba/scoreboard",
         ]}
+        self.log_q.put(req)
         await ws.send(tostring(req))
 
 class League(Handler):
     def extra_init(self):
         self.topics = []
 
+    @property
+    @abstractmethod
+    def league_name(self):
+        raise NotImplementedError
+
+    def is_relevant(self, obj):
+        return (
+            obj.get("topic") == f"/{self.league_name}/scoreboard"
+            and obj.get("eventType") in ["update", "setState"]
+        )
+
+    async def handle(self, obj, ws):
+        if obj.get("eventType")  == "setState":
+            await self.set_state(obj, ws)
+        if obj.get("eventType")  == "update":
+            await self.update(obj, ws)
+
+    async def set_state(self, obj, ws):
+        games = obj.get("body", {}).get("games", [])
+        for game in games:
+            abbr =game.get("abbr")
+            if abbr is None:
+                self.log_q.put(obj)
+                return
+            if abbr not in self.topics:
+                self.topics.append(abbr)
+                gt_topic = f"/{self.league_name}/gametracker/{abbr}/ts"
+                await self.subscribe_topic(ws, gt_topic)
+
+    async def update(self, obj, ws):
+        # await self.unsubscribe_topic(ws, f"/{self.league_name}/scoreboard")
+        pass
+
     async def subscribe_topic(self, ws, topic):
         req = {"cmd": "subscribe", "topics": [topic]}
+        self.log_q.put(req)
         await ws.send(tostring(req))
 
 
     async def unsubscribe_topic(self, ws, topic):
         req = {"cmd": "unsubscribe", "topics": [topic]}
+        self.log_q.put(req)
         await ws.send(tostring(req))
 
 
@@ -99,7 +135,12 @@ class Score(Handler):
         delta = new_score - self.scoreboard.get(team, 0)
         delta = min(10, max(0, delta))  # at least 0 no more than 10
         self.scoreboard[team] = new_score
-        self.blink_score(league, team, delta)
+        if delta > 0:
+            msg = {"league": league, "team": team, "new_score": new_score, "delta": delta}
+            self.log_q.put(msg)
+            log.info(msg)
+            self.blink_score(league, team, delta)
+        self.score_q.put({league: {team: new_score}, "topics": ["lol"]})
 
     def blink_score(self, league, team, delta):
         points = int(delta)

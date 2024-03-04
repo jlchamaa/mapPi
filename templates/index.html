@@ -7,7 +7,7 @@
     </head>
     <body>
       <div class="d-flex gap-2 justify-content-center py-5">
-        <button onclick="new_scores()" class="btn btn-primary rounded-pill px-3" type="button">Primary</button>
+        <button onclick="new_scores()" class="btn btn-primary rounded-pill px-3" type="button">Update</button>
       </div>
       <div class="container">
       <div class="row mb-3 text-center">
@@ -19,9 +19,16 @@
         <div id="nfl" class="col-4 themed-grid-col">
           <h2>NFL</h2>
           {% for team, score in g.sb["nfl"].items() %}
+          {% if score is none %} 
           <div class="row justify-content-center">
-              <h6 style="background: 'white'" id="nfl.{{ team }}">{{ team }}: {{ score }}</h6>
+              <h6 style="background: 'white'" id="nfl.{{ team }}" hidden> {{ team }}: {{ score }} </h6>
           </div>
+          {% endif %}
+          {% if score is not none%} 
+          <div class="row justify-content-center">
+              <h6 style="background: 'white'" id="nfl.{{ team }}"> {{ team }}: {{ score }} </h6>
+          </div>
+          {% endif %}
           {% endfor %}
         </div>
 
@@ -29,7 +36,11 @@
           <h2>MLB</h2>
           {% for team, score in g.sb["mlb"].items() %}
           <div class="row justify-content-center">
-              <h6 style="background: 'white'" id="mlb.{{ team }}">{{ team }}: {{ score }}</h6>
+              <h6 style="background: 'white'"
+                  id="mlb.{{ team }}"
+                  hidden>
+                      {{ team }}: {{ score }}
+              </h6>
           </div>
           {% endfor %}
         </div>
@@ -38,7 +49,11 @@
           <h2>NBA</h2>
           {% for team, score in g.sb["nba"].items() %}
           <div class="row justify-content-center">
-              <h6 style="background: 'white'" id="nba.{{ team }}">{{ team }}: {{ score }}</h6>
+              <h6 style="background: 'white'"
+                  id="nba.{{ team }}"
+                  hidden>
+                      {{ team }}: {{ score }}
+              </h6>
           </div>
           {% endfor %}
         </div>

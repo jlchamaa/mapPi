@@ -28,13 +28,14 @@ function update(league, team, score) {
     const team_id = league + "." + team;
     const div = document.getElementById(team_id);
     if (score === null) {
-        div.style.backgroundColor = "white"
+        div.style.backgroundColor = "white";
     }
     else {
         div.style.backgroundColor = "lightgreen"
         div.innerHTML = team + ": " + score;
+        div.hidden = false;
     }
 }
 
-const the_timer = setInterval(new_lines, 1000)
+const the_timer = setInterval(new_lines, 5000)
 // const the_timer_2 = setInterval(new_scores, 5000)

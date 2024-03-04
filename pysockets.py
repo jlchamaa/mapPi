@@ -7,9 +7,10 @@ import traceback
 from logging.handlers import TimedRotatingFileHandler
 from handlers.scoreboard import Scoreboard
 from handlers import all_handlers
-h = TimedRotatingFileHandler("logs/out", when='H')
+h = TimedRotatingFileHandler("logs/out", when='D')
 h.setFormatter(logging.Formatter(
-    '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+    '%(asctime)s %(levelname)-8s %(message)s',
+    datefmt="%a, %d %b %Y %H:%M:%S, %x %X"
 ))
 log = logging.getLogger("mappy")
 log.setLevel(logging.DEBUG)
@@ -82,10 +83,6 @@ class Map():
             self.sb.clear_games()
             try_again = self.try_map()
             self.logwrite(f"Try Map finished and returned {try_again}")
-
-
-    def record_score():
-        pass
 
     async def try_map(self):
         log.info("Trying map")

@@ -13,21 +13,20 @@ p = Process(target=pys_run, args=(score_q, log_q))
 p.start()
 
 
-def gen_update(start=False):
-    val = 0 if start else None
+def gen_update():
+    val = None
     return {
         "nba": {team: val for team in teams["nba"]},
         "nfl": {team: val for team in teams["nfl"]},
         "mlb": {team: val for team in teams["mlb"]},
+        "topics": [],
     }
 
 
 @app.route('/')
 def index():
-    global SB 
-    SB = gen_update(start=True)
+    global SB
     g.sb = SB
-    g.topics = ["topic1"]
     return render_template('index.html')
 
 @app.route('/new_lines')
@@ -40,17 +39,29 @@ def new_lines():
 
 @app.route('/new_scores')
 def scores():
-    # new_sb = gen_update()
-    # return gen_update()
-    return random_score()
+    global SB
+    new_sb = gen_update()
+    new_sb.update(SB)
+    while not score_q.empty():
+        news = score_q.get()
+        for league in ["nfl", "nba", "mlb"]:
+            new_sb[league].update(news.get(league, {}))
+    SB = new_sb
+    g.topics = new_sb["topics"]
+    return new_sb
 
+
+def real_score(league, team, new_score):
+    new_sb = gen_update()
+    new_sb[league][team] = new_score
+    return json.dumps(new_sb)
 
 def random_score():
     global SB
     sb = SB
     league = random.choice(list(sb))
     team = random.choice(list(sb[league]))
-    score = sb[league][team] 
+    score = sb[league][team] or 0
     new_score = score + random.randint(1,7)
     new_sb = gen_update()
     new_sb[league][team] = new_score
@@ -60,6 +71,7 @@ def random_score():
 portno=None
 with open('portno','r') as myfile:
     portno=int(myfile.read())
+SB = gen_update()
 app.run(
     host="0.0.0.0",
     port=portno,
