@@ -4,7 +4,6 @@ import json
 import logging
 import websockets
 import traceback
-from handlers.scoreboard import Scoreboard
 from handlers import all_handlers
 CBS_URI = "wss://torq.cbssports.com/torq/handler/117/7v5ku21t/websocket"
 log = logging.getLogger("mappy")
@@ -24,17 +23,10 @@ def destring(obj):
     return obj
 
 
-def tostring(obj):
-    for _ in range(2):
-        obj = json.dumps(obj)
-    return obj
-
-
 class Map():
     def __init__(self, score_q, log_q):
         self.score_q = score_q
         self.log_q = log_q
-        self.sb = Scoreboard()
         self.handlers = self.build_handler(
             self.score_q,
             self.log_q,
@@ -74,7 +66,6 @@ class Map():
         try_again = True
         while try_again:
             self.logwrite("Trying Map Loop")
-            self.sb.clear_games()
             try_again = self.try_map()
             self.logwrite(f"Try Map finished and returned {try_again}")
 

@@ -1,5 +1,6 @@
 import logging
-from handlers.base import League, Score
+from handlers.league import League
+from handlers.score import Score
 log = logging.getLogger("mappy")
 
 
