@@ -1,6 +1,6 @@
 from datetime import datetime
 from teams import teams, gamma
-import serial
+# import serial
 
 
 class Scoreboard:
@@ -10,7 +10,7 @@ class Scoreboard:
         self.nba = {}
         self.nfl = {}
         self.games = set()
-        self.ser = serial.Serial('/dev/ttyACM0', 38400)
+        # self.ser = serial.Serial('/dev/ttyACM0', 38400)
 
     def clear_games(self):
         current_day = datetime.now().date()
@@ -41,7 +41,7 @@ class Scoreboard:
             # ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
             ba[index] = min(255, value + 1)
         ba[8] = int(0)
-        ser.write(ba)
+        # self.ser.write(ba)
 
     def record_score(self, league, team, new_score):
         scores = getattr(self, league)
@@ -51,6 +51,3 @@ class Scoreboard:
         if delta > 0 and delta < 15:
             self.blink_map(league, team, new_score - old_score)
         return "({}) {} scores {} -> {}".format(league, team, old_score, new_score)
-
-
-

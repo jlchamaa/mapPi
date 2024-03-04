@@ -4,17 +4,11 @@ import json
 import logging
 import websockets
 import traceback
-from logging.handlers import TimedRotatingFileHandler
 from handlers.scoreboard import Scoreboard
 from handlers import all_handlers
-h = TimedRotatingFileHandler("logs/out", when='D')
-h.setFormatter(logging.Formatter(
-    '%(asctime)s %(levelname)-8s %(message)s',
-    datefmt="%a, %d %b %Y %H:%M:%S, %x %X"
-))
+CBS_URI = "wss://torq.cbssports.com/torq/handler/117/7v5ku21t/websocket"
 log = logging.getLogger("mappy")
 log.setLevel(logging.DEBUG)
-log.addHandler(h)
 log.info("Help")
 
 
@@ -59,7 +53,7 @@ class Map():
                 log.error(msg)
         try:
             return destring(msg)
-        except:
+        except BaseException:
             log.error("Un-de-stringable massage")
             log.error(msg)
             raise
@@ -79,16 +73,15 @@ class Map():
     def map_loop(self):
         try_again = True
         while try_again:
-            self.logwrite(f"Trying Map Loop")
+            self.logwrite("Trying Map Loop")
             self.sb.clear_games()
             try_again = self.try_map()
             self.logwrite(f"Try Map finished and returned {try_again}")
 
     async def try_map(self):
         log.info("Trying map")
-        uri = "wss://torq.cbssports.com/torq/handler/117/7v5ku21t/websocket"
         try:
-            async with websockets.connect(uri, ssl=True) as ws:
+            async with websockets.connect(CBS_URI, ssl=True) as ws:
                 while True:
                     message = await ws.recv()
                     await self.attempt_all(message, ws)
@@ -106,6 +99,7 @@ class Map():
             self.logwrite(e)
             self.logwrite(traceback.format_exc())
             return False
+
 
 if __name__ == "__main__":
     run()

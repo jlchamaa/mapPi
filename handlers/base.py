@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 import json
 import logging
-import serial
+# import serial
 import traceback
 from teams import teams, gamma
 log = logging.getLogger("mappy")
-USB = serial.Serial('/dev/ttyACM0', 38400)
+# USB = serial.Serial('/dev/ttyACM0', 38400)
+
 
 def tostring(obj):
     for _ in range(2):
@@ -26,13 +27,12 @@ class Handler(ABC):
         try:
             if self.is_relevant(obj):
                 await self.handle(obj, ws)
-        except BaseException as e:
+        except BaseException:
             if not (isinstance(obj, dict) or isinstance(obj, list)):
                 obj = str(obj)
             traceback.print_exc()
             log.info(type(obj))
             log.info(str(obj))
-
 
     @abstractmethod
     def is_relevant(self, obj):
@@ -74,9 +74,10 @@ class ScoreboardSubscription(Handler):
                 "/mlb/scoreboard",
                 "/nfl/scoreboard",
                 "/nba/scoreboard",
-        ]}
+            ]}
         self.log_q.put(req)
         await ws.send(tostring(req))
+
 
 class League(Handler):
     def extra_init(self):
@@ -94,15 +95,15 @@ class League(Handler):
         )
 
     async def handle(self, obj, ws):
-        if obj.get("eventType")  == "setState":
+        if obj.get("eventType") == "setState":
             await self.set_state(obj, ws)
-        if obj.get("eventType")  == "update":
+        if obj.get("eventType") == "update":
             await self.update(obj, ws)
 
     async def set_state(self, obj, ws):
         games = obj.get("body", {}).get("games", [])
         for game in games:
-            abbr =game.get("abbr")
+            abbr = game.get("abbr")
             if abbr is None:
                 self.log_q.put(obj)
                 return
@@ -119,7 +120,6 @@ class League(Handler):
         req = {"cmd": "subscribe", "topics": [topic]}
         self.log_q.put(req)
         await ws.send(tostring(req))
-
 
     async def unsubscribe_topic(self, ws, topic):
         req = {"cmd": "unsubscribe", "topics": [topic]}
@@ -165,4 +165,4 @@ class Score(Handler):
             # ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
             ba[index] = min(255, value + 1)
         ba[8] = int(0)
-        USB.write(ba)
+        # USB.write(ba)
