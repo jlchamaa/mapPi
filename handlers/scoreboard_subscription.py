@@ -1,4 +1,6 @@
 from handlers.base import Handler
+import logging
+log = logging.getLogger("mappy")
 
 
 class ScoreboardSubscription(Handler):
@@ -13,5 +15,6 @@ class ScoreboardSubscription(Handler):
                 "/nfl/scoreboard",
                 "/nba/scoreboard",
             ]}
-        self.log_q.put(req)
+        # self.log_q.put(req)
+        log.info(req)
         await ws.send(self.tostring(req))

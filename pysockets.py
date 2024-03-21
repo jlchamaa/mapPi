@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from multiprocessing import Queue
 import asyncio
 import json
 import logging
@@ -6,13 +7,17 @@ import websockets
 import traceback
 from handlers import all_handlers
 CBS_URI = "wss://torq.cbssports.com/torq/handler/117/7v5ku21t/websocket"
+logging.basicConfig()
 log = logging.getLogger("mappy")
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 log.info("Help")
 
 
 def run(score_q, log_q):
+    log.info("run run")
+    print("run run 2")
     my_map = Map(score_q, log_q)
+    print("map made")
     asyncio.run(my_map.try_map())
 
 
@@ -56,11 +61,8 @@ class Map():
             await h.attempt(obj, ws)
 
     def logwrite(self, line, data=False):
-        if not data:
-            log.info(line)
-            # await self.emit(self.Logmessage(self, line))
-        else:
-            log.info(line)
+        print(line)
+        log.info(line)
 
     def map_loop(self):
         try_again = True
@@ -93,4 +95,8 @@ class Map():
 
 
 if __name__ == "__main__":
-    run()
+    score_q = Queue()
+    log_q = Queue()
+    log.info("run main")
+    print("run main 2")
+    run(score_q, log_q)

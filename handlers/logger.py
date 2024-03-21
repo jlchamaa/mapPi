@@ -1,4 +1,7 @@
 from handlers.base import Handler
+from datetime import datetime
+from json import dump
+file = "playback.log"
 
 
 class Logger(Handler):
@@ -6,4 +9,7 @@ class Logger(Handler):
         return True
 
     async def handle(self, obj, ws):
-        self.log_q.put(obj)
+        with open(file, "a") as f:
+            dump(obj, f, indent=2)
+            f.write(",\n")
+            # self.log_q.put(obj)

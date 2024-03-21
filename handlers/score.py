@@ -16,7 +16,7 @@ class Score(Handler):
         self.scoreboard[team] = new_score
         if delta > 0:
             msg = {"league": league, "team": team, "new_score": new_score, "delta": delta}
-            self.log_q.put(msg)
+            # self.log_q.put(msg)
             log.info(msg)
             self.blink_score(league, team, delta)
         self.score_q.put({league: {team: new_score}, "topics": ["lol"]})

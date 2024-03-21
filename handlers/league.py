@@ -1,5 +1,7 @@
 from abc import abstractmethod
 from handlers.base import Handler
+import logging
+log = logging.getLogger("mappy")
 
 
 class League(Handler):
@@ -28,7 +30,8 @@ class League(Handler):
         for game in games:
             abbr = game.get("abbr")
             if abbr is None:
-                self.log_q.put(obj)
+                # self.log_q.put(obj)
+                log.info(obj)
                 return
             if abbr not in self.topics:
                 self.topics.append(abbr)
@@ -41,10 +44,12 @@ class League(Handler):
 
     async def subscribe_topic(self, ws, topic):
         req = {"cmd": "subscribe", "topics": [topic]}
-        self.log_q.put(req)
+        # self.log_q.put(req)
+        log.info(req)
         await ws.send(self.tostring(req))
 
     async def unsubscribe_topic(self, ws, topic):
         req = {"cmd": "unsubscribe", "topics": [topic]}
-        self.log_q.put(req)
+        # self.log_q.put(req)
+        log.info(req)
         await ws.send(self.tostring(req))
