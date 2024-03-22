@@ -4,7 +4,7 @@ import serial
 from handlers.base import Handler
 from teams import teams, gamma
 log = logging.getLogger("mappy")
-BLINK = False
+BLINK = True
 
 
 class Score(Handler, ABC):
@@ -25,19 +25,20 @@ class Score(Handler, ABC):
             and obj.get("eventType") == "update"
         )
 
-    def record_score(self, league, team, new_score):
+    def record_score(self, team, new_score):
         delta = new_score - self.scoreboard.get(team, 0)
         delta = min(10, max(0, delta))  # at least 0 no more than 10
         self.scoreboard[team] = new_score
         if delta > 0:
-            msg = {"league": league, "team": team, "new_score": new_score, "delta": delta}
+            msg = {"league": self.league_name, "team": team, "new_score": new_score, "delta": delta}
             # self.log_q.put(msg)
             log.info(msg)
             if self.blink:
-                self.blink_score(league, team, delta)
-        self.score_q.put({league: {team: new_score}, "topics": ["lol"]})
+                self.blink_score(team, delta)
+        self.score_q.put({self.league_name: {team: new_score}, "topics": ["lol"]})
 
-    def blink_score(self, league, team, delta):
+    def blink_score(self, team, delta):
+        league = self.league_name
         points = int(delta)
         cityNum = int(teams[league][team]['lednum'])
         temp = teams[league][team]['color1']

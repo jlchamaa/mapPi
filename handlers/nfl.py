@@ -20,4 +20,4 @@ class NFLScore(Score):
         for team in teams:
             abbr = team["abbr"]
             score = int(team["total_points"])
-            self.record_score("nfl", abbr, score)
+            self.record_score(abbr, score)

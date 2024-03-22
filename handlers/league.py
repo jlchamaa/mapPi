@@ -6,7 +6,7 @@ log = logging.getLogger("mappy")
 
 class League(Handler, ABC):
     def extra_init(self):
-        self.topics = []
+        self.topics = set()
         self.sb_topic = f"/{self.league_name}/scoreboard"
 
     @property
@@ -43,14 +43,10 @@ class League(Handler, ABC):
     async def set_state(self, obj, ws):
         games = obj.get("body", {}).get("games", [])
         for game in games:
-            abbr = game.get("abbr")
-            if abbr is None:
-                # self.log_q.put(obj)
-                log.info(obj)
-                return
-            if abbr not in self.topics:
-                self.topics.append(abbr)
-                gt_topic = f"/{self.league_name}/gametracker/{abbr}/ts"
+            game_id = game.get("abbr", None)
+            if game_id is not None and game_id not in self.topics:
+                self.topics.add(game_id)
+                gt_topic = f"/{self.league_name}/gametracker/{game_id}/ts"
                 await self.subscribe_topic(ws, gt_topic)
 
     async def update(self, obj, ws):

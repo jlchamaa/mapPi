@@ -20,4 +20,4 @@ class NBAScore(Score):
         for team in teams:
             name = team["abbr"]
             score = int(team["stats"]["points"])
-            self.record_score("nba", name, score)
+            self.record_score(name, score)
