@@ -1,14 +1,29 @@
+from abc import ABC, abstractmethod
 import logging
-# import serial
+import serial
 from handlers.base import Handler
 from teams import teams, gamma
 log = logging.getLogger("mappy")
-# USB = serial.Serial('/dev/ttyACM0', 38400)
+BLINK = False
 
 
-class Score(Handler):
+class Score(Handler, ABC):
     def extra_init(self):
         self.scoreboard = {}
+        self.blink = BLINK
+        if self.blink:
+            self.USB = serial.Serial('/dev/ttyACM0', 38400)
+
+    @property
+    @abstractmethod
+    def league_name(self):
+        raise NotImplementedError
+
+    def is_relevant(self, obj):
+        return (
+            obj.get("topic", "").startswith(f"/{self.league_name}/gametracker")
+            and obj.get("eventType") == "update"
+        )
 
     def record_score(self, league, team, new_score):
         delta = new_score - self.scoreboard.get(team, 0)
@@ -18,7 +33,8 @@ class Score(Handler):
             msg = {"league": league, "team": team, "new_score": new_score, "delta": delta}
             # self.log_q.put(msg)
             log.info(msg)
-            self.blink_score(league, team, delta)
+            if self.blink:
+                self.blink_score(league, team, delta)
         self.score_q.put({league: {team: new_score}, "topics": ["lol"]})
 
     def blink_score(self, league, team, delta):
@@ -44,4 +60,4 @@ class Score(Handler):
             # ensures zerobyte is the sole zero.  Adjust values back on Arduino Side!
             ba[index] = min(255, value + 1)
         ba[8] = int(0)
-        # USB.write(ba)
+        self.USB.write(ba)

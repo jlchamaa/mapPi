@@ -11,11 +11,9 @@ class NBALeague(League):
 
 
 class NBAScore(Score):
-    def is_relevant(self, obj):
-        return (
-            obj.get("topic", "").startswith("/nba/gametracker")
-            and obj.get("eventType") == "update"
-        )
+    @property
+    def league_name(self):
+        return "nba"
 
     async def handle(self, obj, ws):
         teams = obj.get("body", [])

@@ -1,3 +1,4 @@
+from datetime import datetime
 from handlers.base import Handler
 from datetime import datetime
 from json import dump
@@ -9,7 +10,8 @@ class Logger(Handler):
         return True
 
     async def handle(self, obj, ws):
+        obj["z_timestamp"] = datetime.now().strftime("%c")
         with open(file, "a") as f:
-            dump(obj, f, indent=2)
+            dump(obj, f, indent=2, sort_keys=True)
             f.write(",\n")
             # self.log_q.put(obj)

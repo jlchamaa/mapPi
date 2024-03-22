@@ -21,6 +21,7 @@ class Handler(ABC):
         except BaseException:
             if not (isinstance(obj, dict) or isinstance(obj, list)):
                 obj = str(obj)
+            log.info("Failure during handler attempt")
             traceback.print_exc()
             log.info(type(obj))
             log.info(str(obj))
