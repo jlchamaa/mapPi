@@ -25,7 +25,7 @@ def run():
         # problem described in try_map()
         result = 4
 
-    log.info(f"We recieved this result: {result}!")
+    log.info(f"We got this result: {result}!")
     for q in [score_q, log_q]:
         q.close()
 
@@ -110,4 +110,6 @@ class Map():
 
 
 if __name__ == "__main__":
-    sys.exit(run())
+    result = run()
+    log.info(f"Sys.exit with: {result}!")
+    sys.exit(result)
