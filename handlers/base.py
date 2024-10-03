@@ -6,9 +6,7 @@ log = logging.getLogger("mappy")
 
 
 class Handler(ABC):
-    def __init__(self, score_q, log_q):
-        self.score_q = score_q
-        self.log_q = log_q
+    def __init__(self):
         self.extra_init()
 
     def extra_init(self):

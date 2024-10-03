@@ -5,7 +5,7 @@ from .nba import NBALeague, NBAScore
 from .nfl import NFLLeague, NFLScore
 
 all_handlers = [
-    # Logger,
+    Logger,
     Auth,
     MLBLeague, MLBScore,
     NBALeague, NBAScore,

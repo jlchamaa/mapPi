@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from multiprocessing import Queue
 from datetime import datetime
 import asyncio
 import json
@@ -15,9 +14,7 @@ log.setLevel(logging.INFO)
 
 
 def run():
-    score_q = Queue()
-    log_q = Queue()
-    my_map = Map(score_q, log_q)
+    my_map = Map()
     try:
         result = asyncio.run(my_map.try_map())
     except (KeyboardInterrupt, asyncio.CancelledError):
@@ -26,9 +23,6 @@ def run():
         result = 4
 
     log.info(f"We got this result: {result}!")
-    for q in [score_q, log_q]:
-        q.close()
-
     return result
 
 
@@ -40,16 +34,12 @@ def destring(obj):
 
 
 class Map():
-    def __init__(self, score_q, log_q):
-        self.score_q = score_q
-        self.log_q = log_q
+    def __init__(self):
         self.handlers = self.build_handler(
-            self.score_q,
-            self.log_q,
-        )
+    )
 
-    def build_handler(self, sc, lo):
-        return [h(sc, lo) for h in all_handlers]
+    def build_handler(self):
+        return [h() for h in all_handlers]
 
     @staticmethod
     def transform(msg):
@@ -96,17 +86,6 @@ class Map():
             log.info("Closed for other exception")
             log.info(type(e))
             return 3
-
-        # except (KeyboardInterrupt, asyncio.CancelledError):
-        #     log.info("Cancelled Intentionally")
-        #     return 4
-        #
-        #  For some reason, asyncio.run() doesn't correctly handle
-        #  these errors.  If a KeyboardInterrupt happens, it will
-        #  1. hit the exception block correct
-        #  2. perform the log.info
-        #  3. hit the return line
-        #  4. force a reraise of the exception anyways!
 
 
 if __name__ == "__main__":
